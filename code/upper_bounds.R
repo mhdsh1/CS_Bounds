@@ -1,12 +1,13 @@
 # Mahdi Shams 
 # Date:
 # Des: 
+#this version uses the quantile of -Y and the left-limit definition in terms 
+# of the cdf of -Y 
 
 ###########
 #   Setup
 ###########
 
-#this version uses the quantile of -Y and the left-limit definition in terms of the cdf of -Y 
 rm(list=ls())
 #install.packages("dplyr")
 library(dplyr)
@@ -41,13 +42,15 @@ output_path <- paste0(path, "output/")
 ############
 
 qminus<-function(q,FY,y){
-  #y and FY are vectors of the same length where FY is the value of the cdf at the corresponding y value
-  #no longer removing -Inf since it is computed on R
+  #y and FY are vectors of the same length where FY is the value of the cdf at
+  # the corresponding y value 
+  # no longer removing -Inf since it is computed on R
   qminus<-min(y[FY>=q])
 }
 
 qplus<-function(q,FY,y){
-  #y and FY are vectors of the same length where FY is the value of the cdf at the corresponding y value
+  #y and FY are vectors of the same length where FY is the value of the cdf at
+  # the corresponding y value
  y  = y[-c(length(y))]
  FY = FY[-c(length(y))]
  qplus<-max(y[FY<=q])
@@ -73,7 +76,7 @@ data$state_mw2015 = data$state_mw
 states=na.omit(unique(data$statenum))
 for (i in states){
   for (j in 1:12){
-data$state_mw2007[data$statenum==i&data$month==j] = 
+data$state_mw2007[data$statenum==i & data$month==j] = 
     data$state_mw[which(data$statenum==i&data$month==j&data$year==2007)]
 
 data$state_mw2010[data$statenum==i&data$month==j] = 
@@ -84,16 +87,51 @@ data$state_mw2015[data$statenum==i&data$month==j] =
   }
 }
 
-# Mahdi: why we only have the mean for the last one?
+# data %>%
+# summarise(
+#     mean   = mean(state_mw2010, na.rm = TRUE),
+#     median = median(state_mw2010, na.rm = TRUE),
+#     sd     = sd(state_mw2010, na.rm = TRUE),
+#     min    = min(state_mw2010, na.rm = TRUE),
+#     max    = max(state_mw2010, na.rm = TRUE)
+#   )
+# mean     median   sd        min  max
+# 7.47525   7.25    0.3848248 7.25 8.55
+# 
+# data %>%
+# summarise(
+#     mean   = mean(state_mw2015, na.rm = TRUE),
+#     median = median(state_mw2015, na.rm = TRUE),
+#     sd     = sd(state_mw2015, na.rm = TRUE),
+#     min    = min(state_mw2015, na.rm = TRUE),
+#     max    = max(state_mw2015, na.rm = TRUE)
+#   )
+# 
+# mean       median  sd        min  max
+# 8.046051   8.05    0.7854732 7.25 10.5
+
 
 data$smw_increase0710 = (data$state_mw2010-data$state_mw2007 > 0.25)
-data$smw_increase1015 = (data$state_mw2015-data$state_mw2010 > 0.25)
 data$smw_increase0715 = (data$state_mw2015-data$state_mw2007 > 0.5)
+data$smw_increase1015 = (data$state_mw2015-data$state_mw2010 > 0.25)
+
 
 data2007 = data[data$year==2007,]
 data2010 = data[data$year==2010,]
 data2015 = data[data$year==2015,]
 
+
+# data %>%
+# summarise(
+#     mean   = mean(smw_increase1015, na.rm = TRUE),
+#     median = median(smw_increase1015, na.rm = TRUE),
+#     sd     = sd(smw_increase1015, na.rm = TRUE),
+#     min    = min(smw_increase1015, na.rm = TRUE),
+#     max    = max(smw_increase1015, na.rm = TRUE)
+#   )
+# 
+# mean     median  sd        min max
+# 0.5403855  1     0.4983666   0   1
 
 #################
 # making the outcomes Tn and Cn
@@ -187,16 +225,16 @@ Y10Cn<-na.omit(data2010$wage0[(data2010$smw_increase0710==0)&
   data2010subsample=data2010[data2010$state_mw2010>=premw&
                              data2010$state_mw2010<upremw,]
   summary_stats_pre<-data2010subsample%>%group_by(smw_increase1015)%>%
-    summarise(mean.before = mean(wage0, na.rm=TRUE),
-              var.before = var(wage0, na.rm=TRUE),
-              n.before = sum(!is.na(wage0)))
+    summarise(mean.pre = mean(wage0, na.rm=TRUE),
+              var.pre  = var(wage0, na.rm=TRUE),
+              n.pre    = sum(!is.na(wage0)))
   
   data2015subsample=data2015[data2015$state_mw2010>=premw&
                              data2015$state_mw2010<upremw,]
   summary_stats_post<-data2015subsample%>%group_by(smw_increase1015)%>%
-    summarise(mean.before = mean(wage0, na.rm=TRUE),
-              var.before = var(wage0, na.rm=TRUE),
-              n.before = sum(!is.na(wage0)))
+    summarise(mean.post = mean(wage0, na.rm=TRUE),
+              var.post  = var(wage0, na.rm=TRUE),
+              n.post    = sum(!is.na(wage0)))
 
 Y00Tn<-na.omit(data2010$wage0[data2010$smw_increase1015==1&
                               data2010$state_mw2010>=premw&
@@ -224,41 +262,32 @@ write.csv(summary_stats,
           paste0(output_path, "summarystats_wages_disaggregated06272024_06272024_",
           preperiod,"-",Tperiod,"_",premw,".csv"))
 
-
-
 ### Empirical CDFs
-
-# FY00C -- FY00|D=0 Cdf of control in pre-period
-# FY10C -- FY10|D=0 Cdf of control in post-period
-# FY00T -- FY00|D=1 Cdf of treated in pre-period
-# FY11T -- FY11|D=1 Cdf of treated in post-period
-
-
 
 FY00C<-ecdf(Y00Cn)
 FY10C<-ecdf(Y10Cn)
 FY00T<-ecdf(Y00Tn)
 FY11T<-ecdf(Y11Tn)
 
-Ysupp0 = c(-Inf,seq(0,max(Y00Cn,Y00Tn),0.01),Inf)
-Ysupp1 = c(-Inf,seq(0,max(Y10Cn),0.01),Inf)
+#Ysupp0 = c(-Inf, seq(0  ,         max(Y00Cn,Y00Tn),0.01), Inf)
+#Ysupp1 = c(-Inf, seq(0  ,               max(Y10Cn),0.01), Inf)
+R      = c(-Inf, seq(-1 , 1+max(Y00Cn,Y00Tn,Y10Cn),0.01), Inf)
 
-R = c(-Inf, seq(-1,1+max(Y00Cn,Y00Tn,Y10Cn),0.01),Inf)
 
-FY00Cs = matrix(,nrow=1,ncol=length(Ysupp0))
-FY10Cs = matrix(,nrow=1,ncol=length(Ysupp1))
-FY00Ts = matrix(,nrow=,ncol=length(Ysupp0))
+#FY00Cs = matrix(,nrow=1,ncol=length(Ysupp0))
+#FY10Cs = matrix(,nrow=1,ncol=length(Ysupp1))
+#FY00Ts = matrix(,nrow=,ncol=length(Ysupp0))
 
-for (i in 1:length(Ysupp0)){
+#for (i in 1:length(Ysupp0)){
   
-  FY00Cs[1,i]=FY00C(Ysupp0[i])
+#  FY00Cs[1,i]=FY00C(Ysupp0[i])
   
-  FY00Ts[1,i]=FY00T(Ysupp0[i])
-}
+#  FY00Ts[1,i]=FY00T(Ysupp0[i])
+#}
 
-for (i in 1:length(Ysupp1)){
-  FY10Cs[1,i]=FY10C(Ysupp1[i])
-}
+#for (i in 1:length(Ysupp1)){
+#  FY10Cs[1,i]=FY10C(Ysupp1[i])
+#}
 
 
 #### plotting cdfs for Y00C, Y10C, Y00T

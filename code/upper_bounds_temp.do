@@ -20,7 +20,7 @@ local folder = "CS_Bounds"
 * Directory to Dropbox folder, which depends on machine type:
 if "`c(os)'" == "Windows" global path = "C:/Users/`user'/Dropbox/`folder'"
 if "`c(os)'" == "Unix"    global path = "/home/`user'/Dropbox/`folder'"
-else                      global path = "/Users/`user'/Dropbox/`folder'"
+else global path = "/Users/`user'/Dropbox/Research/`folder'"
  
 global input_path  = "${path}/data"
 global output_path = "${path}/output"
@@ -114,6 +114,7 @@ sort year month statenum
 
 gen smw_increase1015 = (state_mw2015 - state_mw2010 > 0.25)
 
+
 *********************************
 * making the outcomes Tn and Cn
 *********************************
@@ -150,7 +151,7 @@ replace Y10Cn = wage0 if year == 2015            & ///
 			 smw_increase1015 == 0   & ///
 			 state_mw2010 >= `premw' & ///
 			 state_mw2010 <  `upremw'
-
+			 
 /*
 . tabstat Y*, statistics(min p25 p50 mean p75 max var n) format(%9.2f)
 
@@ -181,196 +182,6 @@ summary(Y10Cn)
    0.00   11.10   17.50   22.30   28.85  307.69 
 */
 
-
-g group = .
-
-local premw     = 8
-local upremw    = .
-
-replace group = 1 if year == 2010            & ///
-	             smw_increase1015 == 1   & ///
-	             state_mw2010 >= `premw' & ///
-		     state_mw2010 <  `upremw'
-
-replace group = 2 if year == 2010            & ///
-			 smw_increase1015 == 0   & ///
-			 state_mw2010 >= `premw' & ///
-			 state_mw2010 <  `upremw'
-			 
-replace group = 3 if year == 2015            & ///
-			 smw_increase1015 == 1   & ///
-			 state_mw2010 >= `premw' & ///
-			 state_mw2010 <  `upremw'
-
-replace group = 4 if year == 2015            & ///
-			 smw_increase1015 == 0   & ///
-			 state_mw2010 >= `premw' & ///
-			 state_mw2010 <  `upremw'
-
-label define grp_lab 1 "00T" 2 "00C" 3 "11T" 4 "10C"
-label values group grp_lab
-
-
-
-sort  wage0
-cumul wage0 if group == 1, gen(FY00T) equal
-
-sort  wage0
-cumul wage0 if group == 2, gen(FY00C) equal
-
-sort wage0
-cumul wage0 if group == 3, gen(FY11T) equal
-
-sort wage0
-cumul wage0 if group == 4, gen(FY10C) equal
-
-
-preserve
-qui summ wage0 if inlist(group,1,2,4)
-local start        = -1
-local end          = 1+r(max)
-local step         = 0.01
-local steps_number = round((`end' - `start')/`step') + 1
-range   R `start' `end' `steps_numbnr'
-replace R = round(R, 0.01)
-keep R 
-duplicates drop
-rename R wage0
-save "${output_path}/R", replace
-restore
-
-
-preserve 
-keep if group != .
-keep wage0 FY*
-append using "${output_path}/R", generate(source)
-sort wage0 source
-collapse (firstnm) FY00C FY10C FY00T FY11T source, by(wage0)
-
-replace FY00C = FY00C[_n-1] if FY00C == .
-replace FY10C = FY10C[_n-1] if FY10C == .
-replace FY00T = FY00T[_n-1] if FY00T == .
-replace FY11T = FY11T[_n-1] if FY11T == .
-
-save "${output_path}/wage0", replace
-restore
-
-
-/********************
-
-sort  Y00Cn
-cumul Y00Cn, gen(FY00C) equal
-
-sort  Y10Cn
-cumul Y10Cn, gen(FY10C) equal
-
-sort  Y00Tn
-cumul Y00Tn, gen(FY00T) equal
-
-sort  Y11Tn
-cumul Y11Tn, gen(FY11T) equal
-
-preserve
-sort Y00Cn
-sort Y10Cn
-sort Y00Tn
-sort Y11Tn
-keep Y* year 
-gen id = _n  
-reshape long Y, i(id) j(year)
-keep Y
-save "${output_path}/y2.dta", clear
-restore
-
-
-
-
-egen Rmax = rowmax(Y00Cn Y00Tn Y10Cn)
-qui summ Rmax
-local start        = -1
-local end          = 1+r(max)
-local step         = 0.01
-local steps_number = round((`end' - `start')/`step') + 1
-range   R `start' `end' `steps_numbnr'
-replace R = round(R, 0.01)
-
-
-
-preserve
-egen Rmax = rowmax(Y00Cn Y00Tn Y10Cn)
-qui summ Rmax
-local start        = -1
-local end          = 1+r(max)
-local step         = 0.01
-local steps_number = round((`end' - `start')/`step') + 1
-range   R `start' `end' `steps_numbnr'
-replace R = round(R, 0.01)
-rename R y
-keep y
-tempfile R_data
-save `R_data'
-restore
-
-preserve
-rename Y00Cn y
-keep y FY00C
-tempfile y1_data
-keep if y != . 
-sort y 
-duplicates drop
-tempfile Y00C
-save "${output_path}/Y00C", replace
-restore 
-
-preserve
-rename Y10Cn y
-keep y FY10C
-keep if y != . 
-sort y 
-duplicates drop
-tempfile Y10C
-save "${output_path}/Y10C", replace
-restore 
-
-preserve
-rename Y00Tn y
-keep   y FY00T
-keep if y != . 
-sort y 
-duplicates drop
-tempfile Y00T
-save "${output_path}/Y00T", replace
-restore 
-
-preserve
-rename Y11Tn y
-keep y FY11T
-keep if y != . 
-sort y 
-duplicates drop
-tempfile Y11T
-save "${output_path}/Y11T", replace 
-restore
-
-preserve
-use `R_data', clear
-append using `y1_data', keep(y FY00C)
-append using `y2_data', keep(y FY10C)
-append using `y3_data', keep(y FY00T)
-append using `y4_data', keep(y FY11T)
-save "${output_path}/test2", replace 
-restore
-
-
-
-preserve 
-
-use y, clear 
-
-
-
-
-/*
 preserve
 summarize Y00Cn, meanonly
 local min = r(min)
@@ -397,12 +208,6 @@ joinby R using `original_data'
 
 bysort R (Y00Cn): gen FY00C_new = FY00C[_n-1] if Y00Cn <= R
 bysort R: replace FY00C_new = FY00C_new[_n-1] if missing(FY00C_new)
-
-
-
-
-
-
 *******************
 * Define the empirical cdfs
 ****************************
