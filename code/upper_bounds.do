@@ -118,74 +118,13 @@ gen smw_increase1015 = (state_mw2015 - state_mw2010 > 0.25)
 * making the outcomes Tn and Cn
 *********************************
 
-
-g  double Y00Tn = .
-g  double Y00Cn = .
-g  double Y11Tn = .
-g  double Y10Cn = .
-
-
 // Define parameters
 local premw     = 8
 local upremw    = .
 local preperiod = 2010
 local Tperiod   = 2015
 
-replace Y00Tn = wage0 if year == 2010            & ///
-			 smw_increase1015 == 1   & ///
-			 state_mw2010 >= `premw' & ///
-			 state_mw2010 <  `upremw'
-
-replace Y00Cn = wage0 if year == 2010            & ///
-			 smw_increase1015 == 0   & ///
-			 state_mw2010 >= `premw' & ///
-			 state_mw2010 <  `upremw'
-			 
-replace Y11Tn = wage0 if year == 2015            & ///
-			 smw_increase1015 == 1   & ///
-			 state_mw2010 >= `premw' & ///
-			 state_mw2010 <  `upremw'
-
-replace Y10Cn = wage0 if year == 2015            & ///
-			 smw_increase1015 == 0   & ///
-			 state_mw2010 >= `premw' & ///
-			 state_mw2010 <  `upremw'
-
-/*
-. tabstat Y*, statistics(min p25 p50 mean p75 max var n) format(%9.2f)
-
-   Stats |     Y00Tn     Y00Cn     Y11Tn     Y10Cn
----------+----------------------------------------
-     Min |      0.00      0.00      0.00      0.00
-     p25 |     11.62     10.21     12.75     11.10
-     p50 |     18.46     15.87     20.45     17.50
-    Mean |     23.13     20.12     25.83     22.30
-     p75 |     29.92     25.00     34.23     28.85
-     Max |    857.14    225.00    961.54    307.69
-Variance |    303.61    194.78    351.57    239.73
-       N |  19877.00   4737.00  18039.00   4454.00
---------------------------------------------------
-
-> summary(Y00Tn)
-   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-   0.00   11.62   18.46   23.13   29.92  857.14 
-> summary(Y00Cn)
-   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-   0.00   10.21   15.87   20.12   25.00  225.00 
-summary(Y10Cn)
-> summary(Y11Tn)
-   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-   0.00   12.75   20.45   25.83   34.23  961.54 
-> summary(Y10Cn)
-   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-   0.00   11.10   17.50   22.30   28.85  307.69 
-*/
-
-
 g group = .
-
-local premw     = 8
-local upremw    = .
 
 replace group = 1 if year == 2010            & ///
 	             smw_increase1015 == 1   & ///
@@ -210,6 +149,7 @@ replace group = 4 if year == 2015            & ///
 label define grp_lab 1 "00T" 2 "00C" 3 "11T" 4 "10C"
 label values group grp_lab
 
+// tabstat wage0*, by(group) statistics(min p25 p50 mean p75 max var n) format(%9.2f)
 
 
 sort  wage0
@@ -218,11 +158,103 @@ cumul wage0 if group == 1, gen(FY00T) equal
 sort  wage0
 cumul wage0 if group == 2, gen(FY00C) equal
 
-sort wage0
+sort  wage0
 cumul wage0 if group == 3, gen(FY11T) equal
 
-sort wage0
+sort  wage0
 cumul wage0 if group == 4, gen(FY10C) equal
+
+keep wage0 mFY*
+sort wage0 
+
+
+preserve
+keep if group != . 
+keep wage0 FY* 
+sort wage0
+collapse (firstnm) FY*, by(wage0)
+tempfile ecdf
+save "${output_path}/ecdf", replace
+restore
+
+
+
+preserve 
+replace wage0 = - wage0
+
+sort  wage0
+cumul wage0 if group == 1, gen(mFY00T) equal
+
+sort  wage0
+cumul wage0 if group == 2, gen(mFY00C) equal
+
+keep if group != . 
+
+keep wage0 mFY*
+sort wage0 
+
+collapse (firstnm) mFY*, by(wage0)
+
+tempfile mecdf
+save "${output_path}/mecdf", replace
+
+keep wage0 
+sort wage0 
+
+tempfile mwage0
+save "${output_path}/mwage0", replace
+
+restore
+
+**************************************
+*  plotting cdfs for Y00C, Y10C, Y00T
+**************************************
+
+* generating FY00TR + FY10CR - FY00CR
+
+* Distributional DiD
+
+* FY10TDDID = FY00TR + FY10CR - FY00CR # Dist DiD assumption Slide 24/29
+
+
+
+//Ysupp0 = c(-Inf, seq(0  ,         max(Y00Cn,Y00Tn),0.01), Inf)
+//Ysupp1 = c(-Inf, seq(0  ,               max(Y10Cn),0.01), Inf)
+
+
+preserve
+qui summ wage0 if inlist(group,1,2)
+local start        = 0
+local end          = r(max)
+local step         = 0.01
+local steps_number = round((`end' - `start')/`step') + 1
+range   y `start' `end' `steps_numbnr'
+replace y = round(y, 0.01)
+keep y
+sort y
+rename y wage0
+duplicates drop
+tempfile Ysupp0 
+save "${output_path}/Ysupp0", replace
+restore 
+
+
+preserve
+qui summ wage0 if inlist(group,4)
+local start        = 0
+local end          = r(max)
+local step         = 0.01
+local steps_number = round((`end' - `start')/`step') + 1
+range   y `start' `end' `steps_numbnr'
+replace y = round(y, 0.01)
+keep y
+sort y
+rename y wage0
+duplicates drop
+tempfile Ysupp0 
+save "${output_path}/Ysupp1", replace
+restore 
+
 
 
 preserve
@@ -233,269 +265,103 @@ local step         = 0.01
 local steps_number = round((`end' - `start')/`step') + 1
 range   R `start' `end' `steps_numbnr'
 replace R = round(R, 0.01)
-keep R 
-duplicates drop
+keep R
+sort R
 rename R wage0
+duplicates drop
+tempfile R
 save "${output_path}/R", replace
+restore 
+
+preserve 
+qui summ wage0 if inlist(group,1,2,4)
+local start        = -1 - r(max)
+local end          = 1
+local step         = 0.01
+local steps_number = round((`end' - `start')/`step') + 1
+range   Rm `start' `end' `steps_numbnr'
+replace Rm = round(Rm, 0.01)
+keep Rm
+sort Rm
+rename Rm wage0
+duplicates drop
+tempfile Rm
+save "${output_path}/Rm", replace
+restore 
+
+preserve
+append using "${output_path}/Ysupp0", generate(Ysupp0)
+append using "${output_path}/Ysupp1", generate(Ysupp1)
+append using "${output_path}/R",      generate(R)
+append using "${output_path}/Rm",     generate(Rm)
+append using "${output_path}/mwage0",     generate(mwage0)
+keep wage0 Ysupp0 Ysupp1 R Rm mwage0
+sort wage0
+collapse (sum) Ysupp0 Ysupp1 R Rm mwage0, by(wage0)
+tempfile y
+save "${output_path}/y", replace
+restore
+
+preserve
+use "${output_path}/y", clear
+
+merge 1:m wage0 using "${output_path}/ecdf",  keepusing(FY*) nogen
+
+merge 1:m wage0 using "${output_path}/mecdf", keepusing(mFY*) nogen
 restore
 
 
-preserve 
+/*
+
+//preserve
 keep if group != .
 keep wage0 FY*
-append using "${output_path}/R", generate(source)
-sort wage0 source
-collapse (firstnm) FY00C FY10C FY00T FY11T source, by(wage0)
+append using "${output_path}/R", generate(R)
+gsort wage0 -R
+collapse (firstnm) FY00C FY10C FY00T FY11T R, by(wage0)
 
 replace FY00C = FY00C[_n-1] if FY00C == .
 replace FY10C = FY10C[_n-1] if FY10C == .
 replace FY00T = FY00T[_n-1] if FY00T == .
 replace FY11T = FY11T[_n-1] if FY11T == .
 
-save "${output_path}/wage0", replace
-restore
+g FY10TDDID = FY00T + FY10C - FY00C
 
 
-/********************
+keep if R == 1 
 
-sort  Y00Cn
-cumul Y00Cn, gen(FY00C) equal
+rename FY00C FY00CR 
+rename FY10C FY10CR 
+rename FY00T FY00TR 
+rename FY11T FY11TR 
+*/
 
-sort  Y10Cn
-cumul Y10Cn, gen(FY10C) equal
+//g FY10TDDID = FY00TR + FY10CR - FY00CR
 
-sort  Y00Tn
-cumul Y00Tn, gen(FY00T) equal
+//summ FY10TDDID
 
-sort  Y11Tn
-cumul Y11Tn, gen(FY11T) equal
 
-preserve
-sort Y00Cn
-sort Y10Cn
-sort Y00Tn
-sort Y11Tn
-keep Y* year 
-gen id = _n  
-reshape long Y, i(id) j(year)
-keep Y
-save "${output_path}/y2.dta", clear
-restore
+//save "${output_path}/wage0", replace
+//restore
 
 
 
-
-egen Rmax = rowmax(Y00Cn Y00Tn Y10Cn)
-qui summ Rmax
-local start        = -1
-local end          = 1+r(max)
-local step         = 0.01
-local steps_number = round((`end' - `start')/`step') + 1
-range   R `start' `end' `steps_numbnr'
-replace R = round(R, 0.01)
+ */
 
 
 
-preserve
-egen Rmax = rowmax(Y00Cn Y00Tn Y10Cn)
-qui summ Rmax
-local start        = -1
-local end          = 1+r(max)
-local step         = 0.01
-local steps_number = round((`end' - `start')/`step') + 1
-range   R `start' `end' `steps_numbnr'
-replace R = round(R, 0.01)
-rename R y
-keep y
-tempfile R_data
-save `R_data'
-restore
-
-preserve
-rename Y00Cn y
-keep y FY00C
-tempfile y1_data
-keep if y != . 
-sort y 
-duplicates drop
-tempfile Y00C
-save "${output_path}/Y00C", replace
-restore 
-
-preserve
-rename Y10Cn y
-keep y FY10C
-keep if y != . 
-sort y 
-duplicates drop
-tempfile Y10C
-save "${output_path}/Y10C", replace
-restore 
-
-preserve
-rename Y00Tn y
-keep   y FY00T
-keep if y != . 
-sort y 
-duplicates drop
-tempfile Y00T
-save "${output_path}/Y00T", replace
-restore 
-
-preserve
-rename Y11Tn y
-keep y FY11T
-keep if y != . 
-sort y 
-duplicates drop
-tempfile Y11T
-save "${output_path}/Y11T", replace 
-restore
-
-preserve
-use `R_data', clear
-append using `y1_data', keep(y FY00C)
-append using `y2_data', keep(y FY10C)
-append using `y3_data', keep(y FY00T)
-append using `y4_data', keep(y FY11T)
-save "${output_path}/test2", replace 
-restore
-
-
-
-preserve 
-
-use y, clear 
-
-
-
+*********************************
+* computing CS bounds on support
+*********************************
 
 /*
-preserve
-summarize Y00Cn, meanonly
-local min = r(min)
-local max = r(max)
 
-local step = 0.01
-range R `min' `max' `=round((`max' - `min')/`step')'
+this is the tricky part where you need to
+use the function 
 
-tempfile seq_data
-save `seq_data'
+and limsup transformation ... 
 
-restore
-
-preserve 
-sort  Y00Cn
-keep if Y00Cn != .
-keep Y00Cn FY00C
-tempfile original_data
-save `original_data'
-restore
-
-use `seq_data', clear
-joinby R using `original_data'
-
-bysort R (Y00Cn): gen FY00C_new = FY00C[_n-1] if Y00Cn <= R
-bysort R: replace FY00C_new = FY00C_new[_n-1] if missing(FY00C_new)
+*/
 
 
 
-
-
-
-*******************
-* Define the empirical cdfs
-****************************
-
-sort  Y00Cn
-summarize Y00Cn, meanonly
-local min = r(min)
-local max = r(max)
-local step = 0.01
-range RY00Cn `min' `max' `=round((`max' - `min')/`step')'
-
-tempfile seq_data
-save `seq_data'
-
-restore
-
-sort Y00Cn
-cumul Y00Cn, gen(FY00C) equal
-
-// Step 5: Merge the sequence with the original data
-merge m:1 R using `seq_data', keepusing(FY00C) nogen
-
-// Step 6: Carry forward the last observed CDF value for the gaps (step function behavior)
-bysort R: replace FY00C = FY00C[_n-1] if missing(FY00C)
-
-
-cumul Y00Cn, gen(FY00C) equal
-
-
-
-
-sort  Y10Cn
-cumul Y10Cn, gen(FY10C) equal
-
-sort  Y00Tn
-cumul Y00Tn, gen(FY00T) equal
-
-sort  Y11Tn
-cumul Y11Tn, gen(FY11T) equal
-
-
-local suffixes 00C 10C 00T 11T
-
-foreach suf in `suffixes' {
-    preserve
-    sort Y`suf'n
-    keep Y`suf'n 
-    keep if Y`suf'n != .
-    tempfile `suf'
-    save ``suf''
-    restore
-}
-
-preserve
-use `00C', clear
-append using `10C'
-append using `00T'
-append using `11T'
-
-save "${output_path}/test", replace
-restore
-
-egen Rmax = rowmax(Y00Cn Y00Tn Y10Cn)
-qui summ Rmax
-
-local start        = -1
-local end          = 1+r(max)
-local step         = 0.01
-local steps_number = round((`end' - `start')/`step') + 1
-
-
-//range   R `start' `end' `steps_numbnr'
-//replace R = round(z, 0.01)
-
-
-local suffixes 00C 10C 00T 11T
-
-foreach suf in `suffixes' {
-    preserve
-    sort Y`suf'n
-    keep Y`suf'n FY`suf'
-    keep if Y`suf'n != .
-    range   R `start' `end' `steps_numbnr'
-    replace R = round(R, 0.01)
-    tempfile `suf'
-    save "${output_path}/`suf'", replace
-    restore
-}
-
-
-local suffixes 00C 10C 00T 11T
-
-foreach suf in `suffixes' {
-
-    merge m:1 R using "`temp_`suf''", keepusing(FY`suf') nogen
-}
