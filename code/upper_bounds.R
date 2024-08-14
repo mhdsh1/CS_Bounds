@@ -269,8 +269,8 @@ FY10C<-ecdf(Y10Cn)
 FY00T<-ecdf(Y00Tn)
 FY11T<-ecdf(Y11Tn)
 
-#Ysupp0 = c(-Inf, seq(0  ,         max(Y00Cn,Y00Tn),0.01), Inf)
-#Ysupp1 = c(-Inf, seq(0  ,               max(Y10Cn),0.01), Inf)
+Ysupp0 = c(-Inf, seq(0  ,         max(Y00Cn,Y00Tn),0.01), Inf)
+Ysupp1 = c(-Inf, seq(0  ,               max(Y10Cn),0.01), Inf)
 R      = c(-Inf, seq(-1 , 1+max(Y00Cn,Y00Tn,Y10Cn),0.01), Inf)
 
 
