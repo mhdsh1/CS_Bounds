@@ -268,8 +268,9 @@ end
 // FY10TUBY support is R
 
 /*
-Finds the maximum value in FY10TUBY where Ysupp1noInf is less than or equal to the corresponding value in R.
-Stores this maximum value in the FY10TUBCS matrix or vector at the appropriate position.
+Finds the maximum value in FY10TUBY where Ysupp1noInf is less than or equal to 
+the corresponding value in R. Stores this maximum value in the FY10TUBCS matrix 
+or vector at the appropriate position.
 */
 
 g FY10TUBCS = .
