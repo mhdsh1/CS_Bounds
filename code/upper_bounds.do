@@ -27,6 +27,18 @@ global output_path = "${path}/output"
 
 ********************************************
 
+*** MATA Functions
+
+mata:
+real scalar qminus(real scalar q, real vector FY, real vector y, real vector supp) {
+    cond = (FY :>= q) :& (supp :== 1)
+    if (sum(cond) > 0) {
+        return(min(select(y, cond)))
+    }
+    return(.)
+}
+
+
 ****************
 * Reading Data 
 ****************
@@ -141,7 +153,6 @@ save `ecdf'
 //Ysupp1 = c(-Inf, seq(0  ,               max(Y10Cn),0.01), Inf)
 //R      = c(-Inf, seq(-1 , 1+max(Y00Cn,Y00Tn,Y10Cn),0.01), Inf)
 
-global Inf = 9.99e9
 
 qui summ y if inlist(group,1,2,4)
 local startR = -1
@@ -154,6 +165,8 @@ local end0   = r(max)
 qui summ y if inlist(group,4)
 local start1 = 0
 local end1   = r(max)
+
+global Inf = 9.99e9
 
 preserve
 local step      = 0.01
@@ -209,57 +222,58 @@ g FY10TDDID = FY00TR + FY10CR - FY00CR // Dist DiD assumption Slide 24/29
 
 
 twoway (line FY10TDDID y if inrange(y,0,50))
-graph export "${output_path}/DistDiDY10T_wages_Cengizetal2019", ///
-as(pdf) replace
+//graph export "${output_path}/DistDiDY10T_wages_Cengizetal2019", ///
+//as(pdf) replace
 
 twoway (line FY00CR y if inrange(y,0,50))
-graph export "${output_path}/FY00C_wages_Cengizetal2019", ///
-as(pdf) replace
+//graph export "${output_path}/FY00C_wages_Cengizetal2019", ///
+//as(pdf) replace
 
 twoway (line FY10CR y if inrange(y,0,50)) 
-graph export "${output_path}/FY10C_wages_Cengizetal2019", ///
-as(pdf) replace
+//graph export "${output_path}/FY10C_wages_Cengizetal2019", ///
+//as(pdf) replace
 
 twoway (line FY00TR y if inrange(y,0,50)) 
-graph export "${output_path}/FY00T_wages_Cengizetal2019", ///
-as(pdf) replace
+//graph export "${output_path}/FY00T_wages_Cengizetal2019", ///
+//as(pdf) replace
 
 twoway (line FY11TR y if inrange(y,0,50)) 
-graph export "${output_path}/FY11T_wages_Cengizetal2019", ///
-as(pdf) replace
+//graph export "${output_path}/FY11T_wages_Cengizetal2019", ///
+//as(pdf) replace
 
 
 **********************
 * creating  FY10TUBY
 **********************
+/*
+R code: 
+    
+ FY10TUBY[1,i]= FY00T(qminus(FY10C(Ysupp1noInf[i]),FY00CR,R))
+ 
+*/
 
 // FY10TUBY support is Ysupp1
-
+// this function gives the values for all R but i dont know what does the 
+// FY10TUBY for values except those in R mean ...
 g FY10TUBY = .
 
 mata:
-    FY00C  = st_data(., "FY00C")
-    FY10C  = st_data(., "FY10C")
-    y      = st_data(., "y")
-    Ysupp1 = st_data(., "Ysupp1")
-    FY00TR = st_data(., "FY00TR")
-    FY10TUBY = J(rows(FY00C), 1, .) 
 
-    for (n = 1; n <= rows(FY10C); n++) {
-        if (Ysupp1[n] == 1) {
-            cond = (FY00C :>= FY10C[n]) :& (Ysupp1 :== 1)
-            
-            if (sum(cond) > 0) {
-                min_y = min(select(y, cond)) 
-                cond_y = (y :== min_y)       
-                corresponding_value = select(FY00TR, cond_y)
-                FY10TUBY[n] = corresponding_value
-            }
-        }
-    }
+FY00CR   = st_data(., "FY00CR")
+FY10CR   = st_data(., "FY10CR")
+y        = st_data(., "y")
+Ysupp1   = st_data(., "Ysupp1")
+FY00TR   = st_data(., "FY00TR")
+FY10TUBY = J(rows(FY00CR), 1, .) 
 
-    st_store(., "FY10TUBY", FY10TUBY)
+for (i = 1; i <= rows(FY10CR); i++) {
+    min_y = qminus(FY10CR[i], FY00CR, y, Ysupp1)
+    FY10TUBY[i] = select(FY00TR, (y :== min_y))
+}
+st_store(., "FY10TUBY", FY10TUBY)
 end
+
+
 
 *************************************************
 * Next step: FY10TUBCS ... limsup transformation  
@@ -309,12 +323,68 @@ g FY10TCiC = FY10TUBCS
 
 twoway (line FY10TUBCS y if inrange(y,0,50), lcolor(blue)) || ///
        (line FY11TR    y if inrange(y,0,50), lcolor(black) )
-graph export "${output_path}/FTCSbounds_wages_Cengizetal2019", ///
-as(pdf) replace
+//graph export "${output_path}/FTCSbounds_wages_Cengizetal2019", ///
+//as(pdf) replace
        
 
 twoway (line FY10TUBCS y if (inrange(y,0,15) & inrange(FY10TUBCS,0,0.25)), lcolor(blue)) || ///
-       (line FY11TR    y if (inrange(y,0,15) & inrange(FY10TUBCS,0,0.25)), lcolor(black) )
-graph export "${output_path}/FTCSbounds_zoombottom_wages_Cengizetal2019", ///
-as(pdf) replace
+       (line FY11TR    y if (inrange(y,0,15) & inrange(FY11TR,0,0.25)),    lcolor(black) )
+//graph export "${output_path}/FTCSbounds_zoombottom_wages_Cengizetal2019", ///
+//as(pdf) replace
+
+
+****************** making the quantiles ******************
+
+mata: mata clear
+
+mata:
+FY00CR = st_data(., "FY00CR")
+R      = st_data(., "R")
+y      = st_data(., "y")
+
+p          = range(0, 1, 0.001)
+qminusY00R = J(rows(p), 1, .) 
+
+for (i = 1; i <= rows(p); i++) {
+    cond = (FY00CR :>= p[i]) :& (R :== 1)
+    if (sum(cond) > 0) {
+        qminusY00R[i] = min(select(y, cond))
+    }
+}
+
+// round the thing later 
+qminusY00R
+
+end
+
+
+
+
+mata: mata clear
+
+mata:
+
+real scalar qminus(real scalar q, real vector FY, real vector y, real vector supp) {
+    cond = (FY :>= q) :& (supp :== 1)
+    if (sum(cond) > 0) {
+        return(min(select(y, cond)))
+    }
+    return(.)
+}
+
+FY00CR = st_data(., "FY00CR")
+R      = st_data(., "R")
+y      = st_data(., "y")
+
+p          = range(0, 1, 0.001)
+qminusY00R = J(rows(p), 1, .)  // Initialize with missing values
+
+for (i = 1; i <= rows(p); i++) {
+    qminusY00R[i] = qminus(p[i], FY00CR, y, R)
+}
+
+qminusY00R
+
+end
+
 
