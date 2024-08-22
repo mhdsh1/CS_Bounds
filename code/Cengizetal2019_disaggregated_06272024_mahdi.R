@@ -1,7 +1,7 @@
 ##############################################################################
 # Author:      
-# Start:     2024-08-15
-# Last Edit: 2024-08-19
+# Start:     2024-08-07
+# Last Edit: 2024-08-20
 # Des: 
 # this version uses the quantile of -Y and the left-limit definition 
 # in terms of the cdf of -Y 
@@ -72,7 +72,6 @@ data$wage0<-data$wage/100
 #data$wage0[is.na(data$wage0)]=0
 
 data$state_mw2010 = data$state_mw
-data$state_mw2011 = data$state_mw
 data$state_mw2015 = data$state_mw
 
 states=na.omit(unique(data$statenum))
@@ -80,81 +79,23 @@ for (i in states){
   for (j in 1:12){
 data$state_mw2010[data$statenum==i&data$month==j] = 
     mean(data$state_mw[which(data$statenum==i&data$month==j&data$year==2010)])
-
-data$state_mw2011[data$statenum==i&data$month==j] = 
-    mean(data$state_mw[which(data$statenum==i&data$month==j&data$year==2011)])
-
-data$state_mw2015[data$statenum==i&data$month==j] = 
-    mean(data$state_mw[which(data$statenum==i&data$month==j&data$year==2015)])
-  }
-}
-
-data %>%
-summarise(
-    mean   = mean(state_mw2010, na.rm = TRUE),
-    median = median(state_mw2010, na.rm = TRUE),
-    sd     = sd(state_mw2010, na.rm = TRUE),
-    min    = min(state_mw2010, na.rm = TRUE),
-    max    = max(state_mw2010, na.rm = TRUE)
-  )
-
 # mean     median   sd         min   max
 # 7.47525   7.25    0.3848248  7.25  8.55
 
-data %>%
-summarise(
-    mean   = mean(state_mw2011, na.rm = TRUE),
-    median = median(state_mw2011, na.rm = TRUE),
-    sd     = sd(state_mw2011, na.rm = TRUE),
-    min    = min(state_mw2011, na.rm = TRUE),
-    max    = max(state_mw2011, na.rm = TRUE)
-  )
-
-
-data %>%
-summarise(
-    mean   = mean(state_mw2015, na.rm = TRUE),
-    median = median(state_mw2015, na.rm = TRUE),
-    sd     = sd(state_mw2015, na.rm = TRUE),
-    min    = min(state_mw2015, na.rm = TRUE),
-    max    = max(state_mw2015, na.rm = TRUE)
-  )
-
+data$state_mw2015[data$statenum==i&data$month==j] = 
+    mean(data$state_mw[which(data$statenum==i&data$month==j&data$year==2015)])
 # mean       median  sd         min   max
 # 8.046051   8.05    0.7854732  7.25  10.5
-
+  }
+}
 
 data$smw_increase1015 = (data$state_mw2015-data$state_mw2010 > 0.25)
-data$smw_increase1115 = (data$state_mw2015-data$state_mw2011 > 0.25)
-
-data2010 = data[data$year==2010,]
-data2011 = data[data$year==2011,]
-data2015 = data[data$year==2015,]
-
-
-data %>%
-summarise(
-    mean   = mean(smw_increase1015, na.rm = TRUE),
-    median = median(smw_increase1015, na.rm = TRUE),
-    sd     = sd(smw_increase1015, na.rm = TRUE),
-    min    = min(smw_increase1015, na.rm = TRUE),
-    max    = max(smw_increase1015, na.rm = TRUE)
-  )
-
 # mean       median  sd         min max
 # 0.5403855  1       0.4983666  0   1
 
-data %>%
-summarise(
-    mean   = mean(smw_increase1115, na.rm = TRUE),
-    median = median(smw_increase1115, na.rm = TRUE),
-    sd     = sd(smw_increase1115, na.rm = TRUE),
-    min    = min(smw_increase1115, na.rm = TRUE),
-    max    = max(smw_increase1115, na.rm = TRUE)
-  )
+data2010 = data[data$year==2010,]
+data2015 = data[data$year==2015,]
 
-#       mean median        sd min max
-#  0.5447426   TRUE 0.4979942   0   1
 
 ##################################
 # Defining the outcomes Tn and Cn
@@ -163,100 +104,23 @@ summarise(
 # this makes the second tow in Table 1 in the paper
 #upremw does not rule out any states on the top in the sample
 
-# Mahdi:
-# 3 cases:
-# Case 1: (preperiod == 2007) & (Tperiod == 2010)
-# Case 2: (preperiod == 2007) & (Tperiod == 2015)
-# Case 3: (preperiod == 2010) & (Tperiod == 2015)
-# We only focus on case 3, by assuming preperiod 2010 and Tperiod 2015 
-
-# Mahdi:
-# different groups representing different wage samples: 
-# Tn & Cn groups before (00) and after (11/10) the mw change
-
 premw     = 8 # state minimum wage filtering.
 upremw    = Inf
 
 preperiod = 2010
 Tperiod   = 2015
 
-# Case 1
-if((preperiod==2007)&(Tperiod==2010)){
-  if (premw>0){
-    data2007subsample = 
-        data2007[data2007$state_mw2007 >= premw & data2007$state_mw2007 < upremw,]
-    summary_stats_pre <- data2007subsample%>%group_by(smw_increase0710)%>%
-      summarise(mean.before = mean(wage0, na.rm=TRUE),
-                var.before  = var(wage0, na.rm=TRUE),
-                n.before    = sum(!is.na(wage0)))
-    
-    data2010subsample = 
-        data2010[data2010$state_mw2007>=premw&data2010$state_mw2007<upremw,]
-    summary_stats_post < -data2010subsample%>%group_by(smw_increase0710)%>%
-      summarise(mean.before = mean(wage0, na.rm=TRUE),
-                var.before  = var(wage0, na.rm=TRUE),
-                n.before    = sum(!is.na(wage0)))
-    
-Y00Tn <- na.omit(data2007$wage0[(data2007$smw_increase0710==1)&
-                                (data2007$state_mw2007>=premw)&
-                                (data2007$state_mw2007<upremw)])
-
-Y00Cn<-na.omit(data2007$wage0[(data2007$smw_increase0710==0)&
-                              (data2007$state_mw2007>=premw)&
-                              (data2007$state_mw2007<upremw)])
-
-Y11Tn<-na.omit(data2010$wage0[(data2010$smw_increase0710==1)&
-                              (data2010$state_mw2007>=premw)&
-                              (data2010$state_mw2007<upremw)])
-
-Y10Cn<-na.omit(data2010$wage0[(data2010$smw_increase0710==0)&
-                              (data2010$state_mw2007>=premw)&
-                              (data2010$state_mw2007<upremw)])
-  }
-  # Mahdi: Whats this additional cond for?
-  else if (premw==0){
-    Y00Tn<-na.omit(data2007$wage0[data2007$smw_increase0710==1])
-    Y00Cn<-na.omit(data2007$wage0[data2007$smw_increase0710==0])
-    Y11Tn<-na.omit(data2010$wage0[data2010$smw_increase0710==1])
-    Y10Cn<-na.omit(data2010$wage0[data2010$smw_increase0710==0])    
-}
-# Case 2
-}else if((preperiod==2007)&(Tperiod==2015)){
-  if (premw>0){
-  Y00Tn<-na.omit(data2007$wage0[data2007$smw_increase0715==1&
-                                data2007$state_mw2007>=premw&
-                                data2007$state_mw2007<upremw])
-                                
-  Y00Cn<-na.omit(data2007$wage0[data2007$smw_increase0715==0&
-                                data2007$state_mw2007>=premw&
-                                data2007$state_mw2007<upremw])
-
-  Y11Tn<-na.omit(data2015$wage0[data2015$smw_increase0715==1&
-                                data2015$state_mw2007>=premw&
-                                data2015$state_mw2007<upremw])
-
-  Y10Cn<-na.omit(data2015$wage0[data2015$smw_increase0715==0&
-                                data2015$state_mw2007>=premw&
-                                data2015$state_mw2007<upremw])
-  }else if (premw==0){
-    Y00Tn<-na.omit(data2007$wage0[data2007$smw_increase0715==1])
-    Y00Cn<-na.omit(data2007$wage0[data2007$smw_increase0715==0])
-    Y11Tn<-na.omit(data2015$wage0[data2015$smw_increase0715==1])
-    Y10Cn<-na.omit(data2015$wage0[data2015$smw_increase0715==0])
-  }
-# Case 3 -- focus here 
-}else if((preperiod==2010)&(Tperiod==2015)){
   
-  data2010subsample=data2010[data2010$state_mw2010>=premw&
-                             data2010$state_mw2010<upremw,]
-  summary_stats_pre<-data2010subsample%>%group_by(smw_increase1015)%>%
+data2010subsample=data2010[data2010$state_mw2010>=premw&
+                           data2010$state_mw2010<upremw,]
+summary_stats_pre<-data2010subsample%>%group_by(smw_increase1015)%>%
     summarise(mean.pre = mean(wage0, na.rm=TRUE),
               var.pre  = var(wage0, na.rm=TRUE),
               n.pre    = sum(!is.na(wage0)))
-  
-  data2015subsample=data2015[data2015$state_mw2010>=premw&
-                             data2015$state_mw2010<upremw,]
-  summary_stats_post<-data2015subsample%>%group_by(smw_increase1015)%>%
+
+data2015subsample=data2015[data2015$state_mw2010>=premw&
+                           data2015$state_mw2010<upremw,]
+summary_stats_post<-data2015subsample%>%group_by(smw_increase1015)%>%
     summarise(mean.post = mean(wage0, na.rm=TRUE),
               var.post  = var(wage0, na.rm=TRUE),
               n.post    = sum(!is.na(wage0)))
@@ -276,100 +140,13 @@ Y11Tn<-na.omit(data2015$wage0[data2015$smw_increase1015==1&
 Y10Cn<-na.omit(data2015$wage0[data2015$smw_increase1015==0&
                               data2015$state_mw2010>=premw&
                               data2015$state_mw2010<upremw])
-}
 
 ### Summary Statistics (Table 1 in the paper row 2)
 
 summary_stats<-cbind(summary_stats_pre,summary_stats_post)
 
-#write.csv(summary_stats, 
-#          paste0(output_path, "summarystats_wages_disaggregated06272024_06272024_",
-#          preperiod,"-",Tperiod,"_",premw,".csv"))
-
-premw     = 0 # state minimum wage filtering.
-upremw    = 8
-
-preperiod = 2010
-Tperiod   = 2015
-
-
-data2010subsample=data2010[data2010$state_mw2010>=premw&
-                           data2010$state_mw2010<upremw,]
-
-summary_stats_pre<-data2010subsample%>%group_by(smw_increase1015)%>%
-  summarise(mean.pre = mean(wage0, na.rm=TRUE),
-            sd.pre   = sd(wage0, na.rm=TRUE),
-            n.pre    = sum(!is.na(wage0)))
-  
-data2015subsample=data2015[data2015$state_mw2010>=premw&
-                           data2015$state_mw2010<upremw,]
-
-summary_stats_post<-data2015subsample%>%group_by(smw_increase1015)%>%
-  summarise(mean.post = mean(wage0, na.rm=TRUE),
-            sd.post   = sd(wage0, na.rm=TRUE),
-            n.post    = sum(!is.na(wage0)))
-
-summary_stats <- cbind(summary_stats_pre,summary_stats_post)
-summary_stats
-
-#####################################
-# Summ Stat for 2011 2015 comparison
-#####################################
-
-premw     = 0 
-upremw    = 8
-
-preperiod = 2011
-Tperiod   = 2015
-
-data2011subsample=data2011[data2011$state_mw2011>=premw&
-                           data2011$state_mw2011<upremw,]
-
-summary_stats_pre<-data2011subsample%>%group_by(smw_increase1115)%>%
-  summarise(mean.pre = mean(wage0, na.rm=TRUE),
-            var.pre  = var(wage0, na.rm=TRUE),
-            n.pre    = sum(!is.na(wage0)))
-
-data2015subsample=data2015[data2015$state_mw2011>=premw&
-                            data2015$state_mw2011<upremw,]
-
-summary_stats_post<-data2015subsample%>%group_by(smw_increase1115)%>%
-  summarise(mean.post = mean(wage0, na.rm=TRUE),
-            var.post  = var(wage0, na.rm=TRUE),
-            n.post    = sum(!is.na(wage0)))
-
-summary_stats <- cbind(summary_stats_pre,summary_stats_post)
-
 write.csv(summary_stats, 
-          paste0(output_path, "summarystats_wages_",
-          preperiod,"-",Tperiod,"_",premw,".csv"))
-
-premw     = 8 # state minimum wage filtering.
-upremw    = Inf
-
-preperiod = 2011
-Tperiod   = 2015
-
-data2011subsample=data2011[data2011$state_mw2011>=premw&
-                           data2011$state_mw2011<upremw,]
-
-summary_stats_pre<-data2011subsample%>%group_by(smw_increase1115)%>%
-  summarise(mean.pre = mean(wage0, na.rm=TRUE),
-            var.pre  = var(wage0, na.rm=TRUE),
-            n.pre    = sum(!is.na(wage0)))
-
-data2015subsample=data2015[data2015$state_mw2011>=premw&
-                            data2015$state_mw2011<upremw,]
-
-summary_stats_post<-data2015subsample%>%group_by(smw_increase1115)%>%
-  summarise(mean.post = mean(wage0, na.rm=TRUE),
-            var.post  = var(wage0, na.rm=TRUE),
-            n.post    = sum(!is.na(wage0)))
-
-summary_stats <- cbind(summary_stats_pre,summary_stats_post)
-
-write.csv(summary_stats, 
-          paste0(output_path, "summarystats_wages_",
+          paste0(output_path, "summarystats_wages_disaggregated06272024_06272024_",
           preperiod,"-",Tperiod,"_",premw,".csv"))
 
 
@@ -388,20 +165,20 @@ Ysupp1 = c(-Inf, seq(0  ,               max(Y10Cn),0.01), Inf)
 R      = c(-Inf, seq(-1 , 1+max(Y00Cn,Y00Tn,Y10Cn),0.01), Inf)
 
 
-#FY00Cs = matrix(,nrow=1,ncol=length(Ysupp0))
-#FY10Cs = matrix(,nrow=1,ncol=length(Ysupp1))
-#FY00Ts = matrix(,nrow=,ncol=length(Ysupp0))
+FY00Cs = matrix(,nrow=1,ncol=length(Ysupp0))
+FY10Cs = matrix(,nrow=1,ncol=length(Ysupp1))
+FY00Ts = matrix(,nrow=,ncol=length(Ysupp0))
 
-#for (i in 1:length(Ysupp0)){
+for (i in 1:length(Ysupp0)){
   
-#  FY00Cs[1,i]=FY00C(Ysupp0[i])
+  FY00Cs[1,i]=FY00C(Ysupp0[i])
   
-#  FY00Ts[1,i]=FY00T(Ysupp0[i])
-#}
+  FY00Ts[1,i]=FY00T(Ysupp0[i])
+}
 
-#for (i in 1:length(Ysupp1)){
-#  FY10Cs[1,i]=FY10C(Ysupp1[i])
-#}
+for (i in 1:length(Ysupp1)){
+  FY10Cs[1,i]=FY10C(Ysupp1[i])
+}
 
 
 FY00CR=matrix(,nrow=1,ncol=length(R))
@@ -416,7 +193,7 @@ for (i in 1:length(R)){
 }
 
 
-#Distributional DiD
+# Distributional DiD
 
 FY10TDDID = FY00TR + FY10CR - FY00CR # Dist DiD assumption Slide 24/29
 
@@ -425,7 +202,7 @@ FY10TDDID = FY00TR + FY10CR - FY00CR # Dist DiD assumption Slide 24/29
 
 pdf(paste0(output_path, sprintf(
     "DistDiDY10T_wages_Cengizetal2019_disaggregated06272024_06272024_%s-%s_%s.pdf",
-    preperiod,Tperiod,premw)))
+    preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
 plot( R,FY10TDDID,xlim=c(0,50),ylim=c(0,1),type="l",col="blue4",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 lines(R,FY11TR,   xlim=c(0,50),ylim=c(0,1),type="l",col="black",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 legend("topleft",c("DistDiD","Obs"),cex=1.25,col=c("blue4","black"),lty=c(1,1))
@@ -433,7 +210,7 @@ dev.off()
 
 pdf(paste0(output_path, sprintf(
     "DistDiDY10T_zoombottom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",
-    preperiod,Tperiod,premw)))
+    preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
 plot( R,FY10TDDID,xlim=c(0,15),ylim=c(0,0.25),type="l",col="blue4",xlab="y",ylab="cdf",cex.lab=1.5,cex.axis=1.5)
 lines(R,FY11TR,   xlim=c(0,15),ylim=c(0,0.25),type="l",col="black",xlab="y",ylab="cdf",cex.lab=1.5,cex.axis=1.5)
 legend("topleft",c("DistDiD","Obs"),cex=1.25,col=c("blue4","black"),lty=c(1,1))
@@ -441,7 +218,7 @@ dev.off()
 
 pdf(paste0(output_path, sprintf(
     "DistDiDY10T_zoomtop_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",
-    preperiod,Tperiod,premw)))
+    preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
 plot( R,FY10TDDID,xlim=c(30,75),ylim=c(0.75,1),type="l",col="blue4",xlab="y",ylab="cdf",cex.lab=1.5,cex.lab=1.5)
 lines(R,FY11TR,   xlim=c(30,75),ylim=c(0.75,1),type="l",col="black",xlab="y",ylab="cdf",cex.lab=1.5,cex.axis=1.5)
 legend("topleft",c("DistDiD","Obs"),cex=1.25,col=c("blue4","black"),lty=c(1,1))
@@ -449,26 +226,26 @@ dev.off()
 
 pdf(paste0(output_path, sprintf(
     "FY00C_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",
-    preperiod,Tperiod,premw)))
+    preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
 plot(R,FY00CR,xlim=c(0,50),ylim=c(0,1),type="l",col="black",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 dev.off()
 
 pdf(paste0(output_path, sprintf(
     "FY10C_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",
-    preperiod,Tperiod,premw)))
+    preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
 plot(R,FY10CR,xlim=c(0,50),ylim=c(0,1),type="l",col="black",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 dev.off()
 
 pdf(paste0(output_path, sprintf(
     "FY00T_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",
-    preperiod,Tperiod,premw)))
+    preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
 plot(R,FY00TR,xlim=c(0,50),ylim=c(0,1),type="l",col="black",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 dev.off()
 
 
 pdf(paste0(output_path, sprintf(
     "FY11T_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",
-    preperiod,Tperiod,premw)))
+    preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
 plot(R,FY11TR,xlim=c(0,50),ylim=c(0,1),type="l",col="black",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 dev.off()
 
@@ -486,11 +263,11 @@ for (i in seq(1,length(Rm),1)){
    FmY00CR[1,i]=FmY00C(Rm[i])
 }
 
-# Ysupp00Cdiscrete = sort(unique(Y00Cn))
-# Ysupp00Cdiscrete = sort(matrix(Ysupp00Cdiscrete,nrow=1,ncol=length(Ysupp00Cdiscrete)))
-# FY00Cds  = matrix(,nrow=1,ncol=length(Ysupp00Cdiscrete))
-# FmY00Cds = matrix(,nrow=1,ncol=length(Ysupp00Cdiscrete))
-# Ysupp00Cdiscretem = sort(matrix(-Ysupp00Cdiscrete,nrow=1,ncol=length(Ysupp00Cdiscrete)))
+Ysupp00Cdiscrete = sort(unique(Y00Cn))
+Ysupp00Cdiscrete = sort(matrix(Ysupp00Cdiscrete,nrow=1,ncol=length(Ysupp00Cdiscrete)))
+FY00Cds  = matrix(,nrow=1,ncol=length(Ysupp00Cdiscrete))
+FmY00Cds = matrix(,nrow=1,ncol=length(Ysupp00Cdiscrete))
+Ysupp00Cdiscretem = sort(matrix(-Ysupp00Cdiscrete,nrow=1,ncol=length(Ysupp00Cdiscrete)))
 
 # #discrete support
 # for (i in seq(1,length(FY00Cds),1)){
@@ -555,7 +332,7 @@ lowesty = min(min(Y10Cn),min(Y11Tn),min(Y00Cn),min(Y00Tn))
 
 pdf(paste0(output_path, sprintf(
     "FTCSbounds_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",
-    preperiod,Tperiod,premw)))
+    preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
 
 plot( R,FY10TLBCS, xlim=c(0,50),ylim=c(0,1),type="l",col="black",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 lines(R,FY10TLBCSm,xlim=c(0,50),ylim=c(0,1),col="red", lty=1)
@@ -567,7 +344,7 @@ dev.off()
 
 pdf(paste0(output_path, sprintf(
     "FTCSbounds_noobs_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",
-    preperiod,Tperiod,premw)))
+    preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
 plot(R, FY10TLBCS, xlim=c(0,50),ylim=c(0,1),type="l",col="black",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 lines(R,FY10TLBCSm,xlim=c(0,50),ylim=c(0,1),col="red", lty=1)
 lines(R,FY10TUBCS, xlim=c(0,50),ylim=c(0,1),col="blue",lty=1)
@@ -577,7 +354,7 @@ dev.off()
 
 pdf(paste0(output_path, sprintf(
     "FTCSbounds_zoombottom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",
-    preperiod,Tperiod,premw)))
+    preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
 plot(R,FY10TLBCS,xlim=c(0,15),ylim=c(0,0.25),type="l",col="black",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 lines(R,FY10TUBCS,xlim=c(0,15),ylim=c(0,0.25),col="blue",lty=1)
 lines(R,FY10TLBCSm,xlim=c(0,50),ylim=c(0,1),col="red",lty=1)
@@ -588,7 +365,7 @@ dev.off()
 
 pdf(paste0(output_path, sprintf(
     "FTCSbounds_noobs_zoombottom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",
-    preperiod,Tperiod,premw)))
+    preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
 plot(R,FY10TLBCS,xlim=c(0,15),ylim=c(0,0.25),type="l",col="black",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 lines(R,FY10TUBCS,xlim=c(0,15),ylim=c(0,0.25),col="blue",lty=1)
 lines(R,FY10TLBCSm,xlim=c(0,50),ylim=c(0,1),col="red",lty=1)
@@ -598,7 +375,7 @@ dev.off()
 
 pdf(paste0(output_path, sprintf(
     "FTCSbounds_zoomtop_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",
-    preperiod,Tperiod,premw)))
+    preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
 plot(R,FY10TLBCS,xlim=c(30,75),ylim=c(0.75,1),type="l",col="black",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 lines(R,FY10TUBCS,xlim=c(30,75),ylim=c(0.75,1),col="blue",lty=1)
 lines(R,FY10TLBCSm,xlim=c(0,50),ylim=c(0,1),col="red",lty=1)
@@ -611,7 +388,7 @@ dev.off()
 
 pdf(paste0(output_path, sprintf(
   "CSboundsDistDiDY10T_wages_Cengizetal2019_disaggregated06272024_06272024_%s-%s_%s.pdf",
-  preperiod,Tperiod,premw)))
+  preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
 plot(R,FY10TDDID,xlim=c(0,50),ylim=c(0,1),type="l",col="blue4",xlab="y",ylab="cdf",cex.lab=1.5,cex.axis=1.5,cex.lab=1.5)
 lines(R,FY10TUBCS,xlim=c(0,15),ylim=c(0,0.25),col="blue",lty=1)
 lines(R,FY10TLBCSm,xlim=c(0,50),ylim=c(0,1),col="red",lty=1)
@@ -621,7 +398,7 @@ dev.off()
 
 pdf(paste0(output_path, sprintf(
   "CSboundsDistDiDY10T_zoombottom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",
-  preperiod,Tperiod,premw)))
+  preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
 plot(R,FY10TDDID,xlim=c(0,15),ylim=c(0,0.25),type="l",col="blue4",xlab="y",ylab="cdf",cex.lab=1.5,cex.axis=1.5,cex.lab=1.5)
 lines(R,FY10TUBCS,xlim=c(0,15),ylim=c(0,0.25),col="blue",lty=1)
 lines(R,FY10TLBCSm,xlim=c(0,50),ylim=c(0,1),col="red",lty=1)
@@ -630,7 +407,7 @@ dev.off()
 
 pdf(paste0(output_path, sprintf(
   "CSboundsDistDiDY10T_zoomtop_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",
-  preperiod,Tperiod,premw)))
+  preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
 plot(R,FY10TDDID,xlim=c(30,75),ylim=c(0.75,1),type="l",col="blue4",xlab="y",ylab="cdf",cex.lab=1.5,cex.axis=1.5,cex.lab=1.5)
 lines(R,FY10TUBCS,xlim=c(0,15),ylim=c(0,0.25),col="blue",lty=1)
 lines(R,FY10TLBCSm,xlim=c(0,50),ylim=c(0,1),col="red",lty=1)
@@ -639,7 +416,7 @@ dev.off()
 
 pdf(paste0(output_path, sprintf(
   "FTCiC_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",
-  preperiod,Tperiod,premw)))
+  preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
 plot(R,FY10TCiC,xlim=c(0,50),ylim=c(0,1),type="l",col="green",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 lines(R,FY10TCiCLB,xlim=c(0,50),ylim=c(0,1),type="l",col="magenta",xlab="y",ylab="cdf")
 lines(R,FY10TLBCSm,xlim=c(30,75),ylim=c(0.75,1),col="red",lty=5)
@@ -650,7 +427,7 @@ dev.off()
 
 pdf(paste0(output_path, sprintf(
   "FTCiC_zoombottom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",
-preperiod,Tperiod,premw)))
+preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
 plot(R,FY10TCiC,xlim=c(0,15),ylim=c(0,0.25),type="l",col="green",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 lines(R,FY11TR,xlim=c(0,15),ylim=c(0,0.25),type="l",col="black",xlab="y",ylab="cdf")
 lines(R,FY10TCiCLB,xlim=c(0,50),ylim=c(0,1),type="l",col="magenta",xlab="y",ylab="cdf")
@@ -661,7 +438,7 @@ dev.off()
 
 pdf(paste0(output_path, sprintf(
   "FTCiC_zoomtop_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",
-  preperiod,Tperiod,premw)))
+  preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
 plot(R,FY10TCiC,xlim=c(30,75),ylim=c(0.75,1),type="l",col="green",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 lines(R,FY11TR,xlim=c(0,10),ylim=c(0,0.1),type="l",col="black",xlab="y",ylab="cdf")
 lines(R,FY10TCiCLB,xlim=c(0,50),ylim=c(0,1),type="l",col="magenta",xlab="y",ylab="cdf")
@@ -673,8 +450,7 @@ dev.off()
 
 pdf(paste0(output_path, sprintf(
   "FTCiC_wages_Cengizetal2019_disaggregated_%s-%s_%s.pdf",
-  preperiod,Tperiod,premw)))
-
+  preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
 plot(R,FY10TCiC,xlim=c(0,50),ylim=c(0,1),type="l",col="green",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 lines(R,FY10TCiCLB,xlim=c(0,50),ylim=c(0,1),type="l",col="magenta",xlab="y",ylab="cdf")
 lines(R,FY10TLBCSm,xlim=c(30,75),ylim=c(0.75,1),col="red",lty=5)
@@ -685,7 +461,7 @@ dev.off()
 
 pdf(paste0(output_path, sprintf(
   "FTCiC_zoombottom_wages_Cengizetal2019_disaggregated_%s-%s_%s.pdf",
-  preperiod,Tperiod,premw)))
+  preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
 plot(R,FY10TCiC,xlim=c(0,15),ylim=c(0,0.25),type="l",col="green",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 lines(R,FY11TR,xlim=c(0,15),ylim=c(0,0.25),type="l",col="black",xlab="y",ylab="cdf")
 legend("topleft",c("CiC-PE", "Obs"),cex=1.25,col=c("green","black"),
@@ -694,7 +470,7 @@ dev.off()
 
 pdf(paste0(output_path, sprintf(
   "FTCiC_zoomtop_wages_Cengizetal2019_disaggregated_%s-%s_%s.pdf",
-  preperiod,Tperiod,premw)))
+  preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
 plot(R,FY10TCiC,xlim=c(30,75),ylim=c(0.75,1),type="l",col="green",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 lines(R,FY11TR,xlim=c(0,10),ylim=c(0,0.1),type="l",col="black",xlab="y",ylab="cdf")
 legend("topleft",c("CiC-PE", "Obs"),cex=1.25,col=c("green","black"),
@@ -722,14 +498,14 @@ for (i in 1:length(p)){
   qminusY00T[1,i] = qminus(p[i],FY00Ts,Ysupp0)
 }
 
-# pdf(paste0(output_path, sprintf(
-#   "QY00+-_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",
-#   preperiod,Tperiod,premw)))
-# plot(p,qplusY00C,xlim=c(0,1),ylim=c(0,50),type="l", col="red",xlab="q",ylab="Quantile")
-# lines(p,qminusY00C,xlim=c(0,1),ylim=c(0,50),type="l", col="blue",xlab="q",ylab="Quantile",lty=1)
-# legend("topleft",c("Q+","Q-"),cex=1.25,col=c("red","blue"),
-#        lty=c(1,2,4))
-# dev.off()
+pdf(paste0(output_path, sprintf(
+  "QY00+-_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",
+  preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
+plot(p,qplusY00C,xlim=c(0,1),ylim=c(0,50),type="l", col="red",xlab="q",ylab="Quantile")
+lines(p,qminusY00C,xlim=c(0,1),ylim=c(0,50),type="l", col="blue",xlab="q",ylab="Quantile",lty=1)
+legend("topleft",c("Q+","Q-"),cex=1.25,col=c("red","blue"),
+       lty=c(1,2,4))
+dev.off()
 
 qplusY00CFY10C  = matrix(,nrow=1,ncol=length(R))
 qminusY00CFY10C = matrix(,nrow=1,ncol=length(R))
@@ -739,14 +515,14 @@ for (i in 1:length(R)){
   qminusY00CFY10C[1,i] = qminus(FY10CR[i],FY00CR,R)
 }
 
-# pdf(paste0(output_path, sprintf(
-#   "QY00CFY10C+-_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",
-#   preperiod,Tperiod,premw)))
-# plot(R,qplusY00CFY10C,xlim=c(10,40),ylim=c(0,50),type="l", col="red",xlab="y1",ylab="y0")
-# lines(R,qminusY00CFY10C,xlim=c(10,40),ylim=c(0,50),type="l", col="blue",xlab="y1",ylab="y0",lty=1)
-# legend("topleft",c("Q+","Q-"),cex=1.25,col=c("red","blue"),
-#        lty=c(1,2,4))
-# dev.off()
+pdf(paste0(output_path, sprintf(
+  "QY00CFY10C+-_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",
+  preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
+plot(R,qplusY00CFY10C,xlim=c(10,40),ylim=c(0,50),type="l", col="red",xlab="y1",ylab="y0")
+lines(R,qminusY00CFY10C,xlim=c(10,40),ylim=c(0,50),type="l", col="blue",xlab="y1",ylab="y0",lty=1)
+legend("topleft",c("Q+","Q-"),cex=1.25,col=c("red","blue"),
+       lty=c(1,2,4))
+dev.off()
 
 boundsSBS = rbind(R,FY10CR,qplusY00CFY10C,qminusY00CFY10C,FY10TLBCS,FY10TUBCS)
 
@@ -784,24 +560,32 @@ for (i in 1:length(p)){
 
 pdf(paste0(output_path, sprintf(
   "Quantiles_DDID_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",
-  preperiod,Tperiod,premw))
+  preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
 plot(p,QY10TDDID,xlim=c(0,1),ylim=c(0,500),type="l",col="blue4",xlab="y",ylab="cdf",cex.lab=1.5,cex.axis=1.5,cex.lab=1.5)
 lines(p,QY11T,xlim=c(0,1),ylim=c(0,500),type="l",col="black",cex.lab=1.5,xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 legend("topleft",c("DistDiD"),cex=1.25,col=c("blue4"),lty=c(1))
 dev.off()
 
-pdf(paste0(output_path, sprintf("Quantiles_DDID_zoom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw))
+pdf(paste0(output_path, sprintf(
+  "Quantiles_DDID_zoom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",
+  preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
 plot(p,QY10TDDID,xlim=c(0,0.25),ylim=c(0,15),type="l",col="blue4",xlab="y",ylab="cdf",cex.lab=1.5,cex.axis=1.5,cex.lab=1.5)
 lines(p,QY11T,xlim=c(0,0.25),ylim=c(0,15),type="l",col="black",cex.lab=1.5,xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 legend("topleft",c("DistDiD"),cex=1.25,col=c("blue4"),lty=c(1,1))
 dev.off()
-pdf(paste0(output_path, sprintf("Quantiles_CS_zoom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw))
+
+pdf(paste0(output_path, sprintf(
+  "Quantiles_CS_zoom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",
+  preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
 plot(p,QY10TCSLB,xlim=c(0,0.2),ylim=c(0,10),type="l",col="red",xlab="y",ylab="cdf",cex.lab=1.5,cex.axis=1.5,cex.lab=1.5)
 lines(p,QY10TCSUB,xlim=c(0,0.2),ylim=c(0,10),type="l",col="blue",xlab="y",ylab="cdf",cex.lab=1.5,cex.axis=1.5,cex.lab=1.5)
 lines(p,QY11T,xlim=c(0,0.2),ylim=c(0,10),type="l",col="black",cex.lab=1.5,xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 legend("topleft",c("CS-LB","CS-UB","Obs"),cex=1.25,col=c("red","blue","black"),lty=c(1,1,1))
 dev.off()
-pdf(paste0(output_path, sprintf("Quantiles_CiC_zoom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw))
+
+pdf(paste0(output_path, sprintf(
+  "Quantiles_CiC_zoom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",
+  preperiod,Tperiod,premw)), pointsize=16,width=12, height=7)
 plot(p,QY10TCiC,xlim=c(0,0.2),ylim=c(0,10),type="l",col="green",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 lines(p,QY11T,xlim=c(0,0.2),ylim=c(0,10),type="l",col="black",cex.lab=1.5,xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 legend("topleft",c("CiC","Obs"),cex=1.25,col=c("green","black"),lty=c(1,1))

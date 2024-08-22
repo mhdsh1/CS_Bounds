@@ -37,25 +37,16 @@ real scalar qminus(real scalar q, real vector FY, real vector y, real vector sup
     }
     return(.)
 }
-
+end
 
 ****************
 * Reading Data 
 ****************
 
-import delimited "${input_path}/CPS_cleaned_merged_07_15.csv", clear
-
+//import delimited "${input_path}/CPS_cleaned_merged_07_15.csv", clear
+import delimited "${input_path}/build/CPS_cleaned_merged_yearly_10_to_15.csv", clear
 
 gen wage0 = wage / 100
-
-preserve
-collapse (mean) state_mw2007 = state_mw ///
-if year == 2007, by (statenum year month)
-tempfile mw2007
-save `mw2007'
-restore
-
-qui merge m:1 statenum month using `mw2007', keepusing(state_mw2007) nogen
 
 preserve
 collapse (mean) state_mw2010 = state_mw ///
@@ -65,6 +56,16 @@ save `mw2010'
 restore
 
 qui merge m:1 statenum month using  `mw2010', keepusing(state_mw2010) nogen
+
+preserve
+collapse (mean) state_mw2011 = state_mw ///
+if year == 2011, by (statenum year month)
+tempfile mw2011
+save `mw2011'
+restore
+
+qui merge m:1 statenum month using  `mw2011', keepusing(state_mw2011) nogen
+
 
 preserve
 collapse (mean) state_mw2015 = state_mw ///
@@ -78,7 +79,51 @@ qui merge m:1 statenum month using  `mw2015', keepusing(state_mw2015) nogen
 order statenum year month wage0 state_mw*  
 sort year month statenum 
 
+gen smw_increase1115 = (state_mw2015 - state_mw2011 > 0.25)
+
 gen smw_increase1015 = (state_mw2015 - state_mw2010 > 0.25)
+
+
+***********************************
+*** just getting the summ stats liKW Table 1 in GKM
+***********************************
+
+preserve 
+g group = .
+
+local premw     = 8
+local upremw    = .
+
+local preperiod = 11
+local Tperiod   = 15
+
+replace group = 1 	if year == 20`preperiod'                & ///
+			smw_increase`preperiod'`Tperiod' == 1   & ///
+			state_mw20`preperiod' >= `premw'        & ///
+			state_mw20`preperiod' <  `upremw'
+
+replace group = 2	if year == 20`preperiod'                & ///
+			smw_increase`preperiod'`Tperiod' == 0   & ///
+			state_mw20`preperiod' >= `premw'        & ///
+			state_mw20`preperiod' <  `upremw'
+			 
+replace group = 3 	if year == 20`Tperiod'                  & ///
+			smw_increase`preperiod'`Tperiod' == 1   & ///
+			state_mw20`preperiod' >= `premw'        & ///
+			state_mw20`preperiod' <  `upremw'
+
+replace group = 4 	if year == 20`Tperiod'                  & ///
+			smw_increase`preperiod'`Tperiod' == 0   & ///
+			state_mw20`preperiod' >= `premw'        & ///
+			state_mw20`preperiod' <  `upremw'
+
+label define grp_lab 1 "00T" 2 "00C" 3 "11T" 4 "10C"
+label values group grp_lab
+
+			
+tabstat wage0*, by(group) statistics(mean sd n) format(%9.2f)
+restore
+
 
 *********************************
 *** making the outcomes Tn and Cn
@@ -115,9 +160,9 @@ replace group = 4 	if year == 2015         & ///
 label define grp_lab 1 "00T" 2 "00C" 3 "11T" 4 "10C"
 label values group grp_lab
 
-rename wage0 y 
-
 // tabstat wage0*, by(group) statistics(min p25 p50 mean p75 max var n) format(%9.2f)
+
+rename wage0 y 
 
 ***************************
 *** creating FY* functions
