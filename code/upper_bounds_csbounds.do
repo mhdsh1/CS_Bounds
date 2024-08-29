@@ -27,23 +27,11 @@ global output_path = "${path}/output"
 
 ********************************************
 
-*** MATA Functions
-
-mata:
-real scalar qminus(real scalar q, real vector FY, real vector y, real vector supp) {
-    cond = (FY :>= q) :& (supp :== 1)
-    if (sum(cond) > 0) {
-        return(min(select(y, cond)))
-    }
-    return(.)
-}
-end
-
 ****************
 * Reading Data 
 ****************
 
-//import delimited "${input_path}/CPS_cleaned_merged_07_15.csv", clear
+/*
 import delimited "${input_path}/build/CPS_cleaned_merged_yearly_10_to_15.csv", clear
 
 gen wage0 = wage / 100
@@ -104,39 +92,67 @@ replace treatment = 1 if smw_increase1015 == 1   & ///
 			 state_mw2010 >= `premw' & ///
 			 state_mw2010 <  `upremw'
 
-rename wage0 y 
+keep wage0 treatment period		
+			 
+save "${input_path}/build/CPS_cleaned_merged_yearly_10_to_15_input.dta", replace
+*/
 
+timer clear 
 
+timer on 1
+
+use "${input_path}/build/CPS_cleaned_merged_yearly_10_to_15_input.dta", clear
 
 which csbounds
 
-csbounds y, treatment(treatment) period(period)
+csbounds wage0, treatment(treatment) period(period)
 
+timer off 1
 
-
-
-
+timer list 
 
 /*
-**********************
-* Upper Bound Plots 
-**********************
+mata: mata clear
 
-* Obs denotes FY11|D=1. 
-* CF-LB/CF-UB denote the CS LB/UB on FY10|D=1
+mata:
+real scalar qplus(real scalar q, real vector FY, real vector y, real vector supp) {
+    cond = (FY :<= q) :& (supp :== 1)
+    if (sum(cond) > 0) {
+        return(max(select(y, cond)))
+    }
+    return(.)
+}
+end
 
-twoway (line FY10TUBCS y if inrange(y,0,50), lcolor(blue)) || ///
-       (line FY11TR    y if inrange(y,0,50), lcolor(black) )
-//graph export "${output_path}/FTCSbounds_wages_Cengizetal2019", ///
-//as(pdf) replace
-       
+mata:
+	real vector calculate_FY10TLBY(string y) {
 
-twoway (line FY10TUBCS y if (inrange(y,0,15) & inrange(FY10TUBCS,0,0.25)), lcolor(blue)) || ///
-       (line FY11TR    y if (inrange(y,0,15) & inrange(FY11TR,0,0.25)),    lcolor(black) )
-//graph export "${output_path}/FTCSbounds_zoombottom_wages_Cengizetal2019", ///
-//as(pdf) replace
+        y_data = st_data(., y)
 
+	FY00CR = st_data(., "FY00CR")
+        FY10CR = st_data(., "FY10CR")
+	R      = st_data(., "R")
+        Ysupp1 = st_data(., "Ysupp1")
+        FY00TR = st_data(., "FY00TR")
+
+        FY10TLBY = J(rows(FY10CR), 1, .)
+        
+        for (i = 1; i <= rows(FY10CR); i++) {  
+            max_y = qplus(FY10CR[i], FY00CR, y_data, R)
+            FY10TLBY[i] = select(FY00TR, (y_data :== max_y))
+		}
+
+        return(FY10TLBY)
+    }
+end
+
+// FY10TLBY[1,i]  = FY00T(qplus(FY10C(Ysupp1noInf[i]),FY00CR,R))  
+
+
+gen FY10TLBY = .
+
+local y = "wage0"
+mata: FY10TLBY = calculate_FY10TLBY("`y'")
+
+mata: st_store(., "FY10TLBY", FY10TLBY)
 */
-
-
-

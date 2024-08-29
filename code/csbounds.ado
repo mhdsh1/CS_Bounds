@@ -105,37 +105,18 @@ program define csbounds
     gen FY10TUBY = .
 
     mata: FY10TUBY = calculate_FY10TUBY("`y'")
-
     mata: st_store(., "FY10TUBY", FY10TUBY)
+    
+    g FY10TUBCS = .
+    
+    mata: FY10TUBCS = calculate_FY10TUBCS("`y'")
+    mata: st_store(., "FY10TUBCS", FY10TUBCS)
+        
+    g FY10TCiC = FY10TUBCS
 
 end
 
-
-mata:
-
-    real vector calculate_FY10TUBY(string y) {
-
-        y_data = st_data(., y)
-
-	FY00CR = st_data(., "FY00CR")
-        FY10CR = st_data(., "FY10CR")
-        Ysupp1 = st_data(., "Ysupp1")
-        FY00TR = st_data(., "FY00TR")
-        
-
-        
-        FY10TUBY = J(rows(FY10CR), 1, .)
-        
-        for (i = 1; i <= rows(FY10CR); i++) {
-            min_y = qminus(FY10CR[i], FY00CR, y_data, Ysupp1)
-            
-            FY10TUBY[i] = select(FY00TR, (y_data :== min_y))
-        }
-        
-        return(FY10TUBY)
-    }
-end
-
+*** Mata Functions 
 
 mata:
 real scalar qminus(real scalar q, real vector FY, real vector y, real vector supp) {
@@ -146,3 +127,57 @@ real scalar qminus(real scalar q, real vector FY, real vector y, real vector sup
     return(.)
 }
 end
+
+mata:
+
+    real vector calculate_FY10TUBY(string y) {
+
+        y_data = st_data(., y)
+
+	FY00CR = st_data(., "FY00CR")
+        FY10CR = st_data(., "FY10CR")
+	R      = st_data(., "R")
+        Ysupp1 = st_data(., "Ysupp1")
+        FY00TR = st_data(., "FY00TR")
+
+        FY10TUBY = J(rows(FY10CR), 1, .)
+        
+        for (i = 1; i <= rows(FY10CR); i++) {  
+            min_y = qminus(FY10CR[i], FY00CR, y_data, R)
+            
+            FY10TUBY[i] = select(FY00TR, (y_data :== min_y))
+        }
+
+        return(FY10TUBY)
+    }
+end
+
+/*
+One solution might be to put  everything in the loop 
+in the if (Ysupp1[n] == 1) {}
+*/
+
+mata:
+
+    real vector calculate_FY10TUBCS(string y) {
+   
+    R        = st_data(., "R")  
+    FY10TUBY = st_data(., "FY10TUBY")
+    y_data   = st_data(.,y)       
+    Ysupp1   = st_data(., "Ysupp1")  
+
+    FY10TUBCS = J(rows(y_data), 1, .)  // Initialize FY10TUBCS vector
+    
+    for (i = 1; i <= rows(y_data); i++) {
+        cond = (Ysupp1 :== 1) :& (y_data :<= y_data[i])
+        
+        if (sum(cond) > 0) {
+            maximum = max(select(FY10TUBY, cond))
+            FY10TUBCS[i] = maximum
+        }
+    }
+    
+    return(FY10TUBCS)
+    }
+end
+
