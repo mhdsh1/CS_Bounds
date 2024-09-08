@@ -12,7 +12,7 @@ Description:
 clear all
 
 * Extract current username
-local user = "mahdi"
+local user = "`c(username)'"
 
 * Current working folder 
 local folder = "CS_Bounds"
@@ -26,6 +26,18 @@ global input_path  = "${path}/data"
 global output_path = "${path}/output"
 
 ********************************************
+
+*** functions 
+
+mata:
+real scalar qminus(real scalar q, real vector FY, real vector y, real vector supp) {
+    cond = (FY :>= q) :& (supp :== 1)
+    if (sum(cond) > 0) {
+        return(min(select(y, cond)))
+    }
+    return(.)
+}
+end
 
 ****************
 * Reading Data 
@@ -98,7 +110,6 @@ save "${input_path}/build/CPS_cleaned_merged_yearly_10_to_15_input.dta", replace
 */
 
 timer clear 
-
 timer on 1
 
 use "${input_path}/build/CPS_cleaned_merged_yearly_10_to_15_input.dta", clear
@@ -108,8 +119,17 @@ which csbounds
 csbounds wage0, treatment(treatment) period(period)
 
 timer off 1
-
 timer list 
+
+
+save "${input_path}/build/CPS_cleaned_merged_yearly_10_to_15_input_with_dists.dta", replace
+
+
+
+
+*****************************
+*** calculating lower bounds 
+*****************************
 
 /*
 mata: mata clear
@@ -156,3 +176,107 @@ mata: FY10TLBY = calculate_FY10TLBY("`y'")
 
 mata: st_store(., "FY10TLBY", FY10TLBY)
 */
+
+*****************************
+*** calculating Q 
+*****************************
+
+
+mata:
+real scalar qminus(real scalar q, real vector FY, real vector y, real vector supp) {
+    cond = (FY :>= q) :& (supp :== 1)
+    if (sum(cond) > 0) {
+        return(min(select(y, cond)))
+    }
+    return(.)
+}
+end
+
+
+g QY10TCSLB = .
+
+g p = .
+
+//QY10TCSLB[1,i]=qminus(p[i],FY10TUBCS,R)
+mata:
+
+        y_data = st_data(., "wage0")
+
+	FY10TUBCS = st_data(., "FY10TUBCS")
+        FY10CR = st_data(., "FY10CR")
+	R      = st_data(., "R")
+        Ysupp1 = st_data(., "Ysupp1")
+        FY00TR = st_data(., "FY00TR")
+
+        step   = 0.001
+        startp = 0
+        endp   = 1
+
+        p_size = (endp - startp) / step + 1
+        p = startp :+ (0::(p_size - 1)) * step
+
+        p = round(p, 0.001)
+
+	p
+        QY10TCSLB = J(rows(p), 1, .)
+        QY10TCSLB
+	
+        for (i = 1; i <= 100; i++) {  
+            i
+            cond = (FY10TUBCS :>= p[i]) :& (R :== 1)
+            if (sum(cond) > 0) {
+              QY10TCSLB[i] = min(select(y_data, cond))
+              QY10TCSLB[i]
+	     }
+  	}
+
+
+end
+
+//QY10TCSLB[1,i]=qminus(p[i],FY10TUBCS,R)
+mata:
+
+        y_data = st_data(., "wage0")
+
+	FY10TUBCS = st_data(., "FY10TUBCS")
+        FY10CR = st_data(., "FY10CR")
+	R      = st_data(., "R")
+        Ysupp1 = st_data(., "Ysupp1")
+        FY00TR = st_data(., "FY00TR")
+
+        step   = 0.001
+        startp = 0
+        endp   = 1
+
+        p_size = (endp - startp) / step + 1
+        p = startp :+ (0::(p_size - 1)) * step
+
+        p = round(p, 0.001)
+
+      QY10TCSLB = J(rows(p), 1, .)
+  	
+        for (i = 1; i <= 100; i++) {  
+            i
+             QY10TCSLB[i] = qminus(p[i], FY10TUBCS, y_data, R)
+              QY10TCSLB[i] = round(QY10TCSLB[i], 0.01) // we had some wiered decimals 
+	     }
+  
+end
+
+// is there a way to save this as a vector and keep working on that? 
+
+
+/*
+qminus<-function(q,FY,y){
+  #y and FY are vectors of the same length where FY is the value of the cdf at
+  # the corresponding y value 
+  # no longer removing -Inf since it is computed on R
+  qminus<-min(y[FY>=q])
+}
+*/
+real scalar qminus(real scalar q, real vector FY, real vector y, real vector supp) {
+    cond = (FY :>= p[i]) :& (supp :== 1)
+    if (sum(cond) > 0) {
+        return(min(select(y, cond)))
+    }
+return(.)

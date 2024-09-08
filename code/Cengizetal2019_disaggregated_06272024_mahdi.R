@@ -18,26 +18,30 @@ library(dplyr)
 #library(dineq)
 #library(stargazer)
 
-# Set seed
 set.seed(123456)
 
-user <- "mahdi"
-
-# Current working folder 
-folder <- "CS_Bounds"
-
-# Directory to Dropbox folder, which depends on machine type:
 os <- .Platform$OS.type
+
 if (os == "windows") {
-  path <- paste0("C:/Users/", user, "/Dropbox/", folder, "/")
+  user <- Sys.getenv("USERNAME")
 } else if (os == "unix") {
-  path <- paste0("/home/", user, "/Dropbox/", folder, "/")
+  user <- Sys.getenv("USER")
 } else {
-  path <- paste0("/Users/", user, "/Dropbox/", folder, "/")
+  user <- Sys.getenv("USER")  # Default to USER environment variable
 }
 
-input_path  <- paste0(path, "data/")
-output_path <- paste0(path, "output/")
+if (os == "windows") {
+  path <- paste0("C:/Users/", user, "/Dropbox/")
+} else if (os == "unix") {
+  path <- paste0("/home/", user, "/Dropbox/")
+} else {
+  path <- paste0("/Users/", user, "/Dropbox/")
+}
+
+folder <- "CS_Bounds"
+
+input_path  <- paste0(path, folder, "data/")
+output_path <- paste0(path, folder, "output/")
 
 ############
 # Functions 
@@ -282,6 +286,9 @@ boundsSBS = rbind(R, FY10CR,
 # obtain quantile of Distributional DiD, LB and UB of CS
 ##########################################################
 
+pgrid = 0.001
+p     = seq(0,1,pgrid)
+
 QY10TDDID  = matrix(,nrow=1,ncol=length(p))
 QY10TCSLB  = matrix(,nrow=1,ncol=length(p))
 QY10TCSUB  = matrix(,nrow=1,ncol=length(p))
@@ -302,15 +309,18 @@ for (i in 1:length(p)){
 # Table 2 -- finding expectation of the quantile function
 ##########################################################
 
-maxR=2*max(R[-c(length(R))])
+maxR=2*max(R[-c(length(R))]) 
+
+# two times 
 
 # Mahdi: Why maxR is 2 times the maximum value in R? 
 # Mahdi:  twice the maximum value in R (except the last one which is Inf)
 
 #DiD
 
-# Mahdi: this pdf function is crucial for the computation of the expectation of the 
-# quantile function
+# Mahdi: this pdf function is crucial for the computation of the expectation of
+# the quantile function
+
 # we make it by taking the difference of the cdf function at each point
 # and later use it to compute the expectation of the quantile function
 
@@ -330,18 +340,24 @@ EY10C=mean(Y10Cn)
 EY00T=mean(Y00Tn)
 
 EY10TCSLB = sum(
-  QY10TCSLB[QY10TCSLB<=maxR&QY10TCSLB>=min(Ysupp1[-c(1)])])
-  *pgrid
+  QY10TCSLB[QY10TCSLB<=maxR&QY10TCSLB>=min(Ysupp1[-c(1)])]
+  )*pgrid
+
+# EY10TCSLB -- this should be UB maybe ... atyp somewhere? 
+25.83-EY10TCSLB
 
 EY10TCSUB = sum(
-  QY10TCSUB[QY10TCSUB<=maxR & QY10TCSUB>= min(Ysupp1[-c(1)])])
-  *pgrid
+  QY10TCSUB[QY10TCSUB<=maxR & QY10TCSUB>= min(Ysupp1[-c(1)])]
+  )*pgrid
 
 EY10TDID=EY00T+EY10C-EY00C
 
+25.83-EY10TDID
 EY10TDDID = sum(
-  QY10TDDID[QY10TDDID<=maxR&QY10TDDID>=min(Ysupp1[-c(1)])])
-  *pgrid
+  QY10TDDID[QY10TDDID<=maxR&QY10TDDID>=min(Ysupp1[-c(1)])]
+  )*pgrid
+
+25.83-EY10TDDID
 
 ####################################
 ### Table 2 continued ... gini swtt 
@@ -351,7 +367,7 @@ EY10TDDID = sum(
 
 # page 16 -- set u = 1 and p is tau 
 
-# MAhdi: here we calculate the termsi n integral 
+# MAhdi: here we calculate the terms in integral 
 G11T     =sum(2*(1-p[QY11T<=maxR&QY11T>=min(Ysupp1[-c(1)])])*
               (QY11T[QY11T<=maxR & QY11T>=min(Ysupp1[-c(1)])])
                 )*pgrid
@@ -369,60 +385,60 @@ GiniY11T=1-G11T/EY11T
 
 # Mahdi: here we subtract the terms and calculate the SWTT
 GTTCSLB = G11T-G10TCSUB
-MCTCSLB = (EY11T-EY10TCSUB)*(1-GiniY11T)
-ICTCSLB = MCTCSLB-GTTCSUB
-
 GTTCSUB = G11T-G10TCSLB
-MCTCSUB = (EY11T-EY10TCSLB)*(1-GiniY11T)
-ICTCSUB = MCTCSUB-GTTCSLB
-
 GTTDDID = G11T-G10TDDID
+
+MCTCSLB = (EY11T-EY10TCSUB)*(1-GiniY11T)
+MCTCSUB = (EY11T-EY10TCSLB)*(1-GiniY11T)
 MCTDDID = (EY11T-EY10TDDID)*(1-GiniY11T)   # Mean component 
+
+ICTCSLB = MCTCSLB-GTTCSUB
+ICTCSUB = MCTCSUB-GTTCSLB
 ICTDDID = -(GTTDDID - MCTDDID)             # Ineq component
 
 ###############
 ### Table 3
 ###############
 
-EQY11T01=sum(QY11T[p<=0.01&p>0])*pgrid/0.01
+EQY11T01 =sum(QY11T[p<=0.01&p>0])*pgrid/0.01
 EQY11T025=sum(QY11T[p<=0.025&p>0])*pgrid/0.025
-EQY11T05=sum(QY11T[p<=0.05&p>0])*pgrid/0.05
-EQY11T10=sum(QY11T[p<=0.1&p>0])*pgrid/0.1
-EQY11T25=sum(QY11T[p<=0.25&p>0])*pgrid/0.25
-EQY11T50=sum(QY11T[p<=0.5&p>0])*pgrid/0.5
+EQY11T05 =sum(QY11T[p<=0.05&p>0])*pgrid/0.05
+EQY11T10 =sum(QY11T[p<=0.1&p>0])*pgrid/0.1
+EQY11T25 =sum(QY11T[p<=0.25&p>0])*pgrid/0.25
+EQY11T50 =sum(QY11T[p<=0.5&p>0])*pgrid/0.5
 
 
-EQY10TDDID01d=sum(R[R<Inf&R>-Inf&FY10TDDID<=0.01]*fY10TDDID[R<Inf&R>-Inf&FY10TDDID<=0.01])
+EQY10TDDID01d =sum(R[R<Inf&R>-Inf&FY10TDDID<=0.01]*fY10TDDID[R<Inf&R>-Inf&FY10TDDID<=0.01])
 EQY10TDDID025d=sum(R[R<Inf&R>-Inf&FY10TDDID<=0.025]*fY10TDDID[R<Inf&R>-Inf&FY10TDDID<=0.025])
-EQY10TDDID05d=sum(R[R<Inf&R>-Inf&FY10TDDID<=0.05]*fY10TDDID[R<Inf&R>-Inf&FY10TDDID<=0.05])
-EQY10TDDID10d=sum(R[R<Inf&R>-Inf&FY10TDDID<=0.1]*fY10TDDID[R<Inf&R>-Inf&FY10TDDID<=0.1])
-EQY10TDDID25d=sum(R[R<Inf&R>-Inf&FY10TDDID<=0.25]*fY10TDDID[R<Inf&R>-Inf&FY10TDDID<=0.25])
-EQY10TDDID50d=sum(R[R<Inf&R>-Inf&FY10TDDID<=0.5]*fY10TDDID[R<Inf&R>-Inf&FY10TDDID<=0.5])
+EQY10TDDID05d =sum(R[R<Inf&R>-Inf&FY10TDDID<=0.05]*fY10TDDID[R<Inf&R>-Inf&FY10TDDID<=0.05])
+EQY10TDDID10d =sum(R[R<Inf&R>-Inf&FY10TDDID<=0.1]*fY10TDDID[R<Inf&R>-Inf&FY10TDDID<=0.1])
+EQY10TDDID25d =sum(R[R<Inf&R>-Inf&FY10TDDID<=0.25]*fY10TDDID[R<Inf&R>-Inf&FY10TDDID<=0.25])
+EQY10TDDID50d =sum(R[R<Inf&R>-Inf&FY10TDDID<=0.5]*fY10TDDID[R<Inf&R>-Inf&FY10TDDID<=0.5])
 
 
 # Mahdi: the same integral as before we just change the u accodingly 
 
-GQY11T01=sum(2*(0.01-p[p<=0.01&p>0])*QY11T[p<=0.01&p>0])*pgrid/(0.01^2)
+GQY11T01 =sum(2*(0.01-p[p<=0.01&p>0])*QY11T[p<=0.01&p>0])*pgrid/(0.01^2)
 GQY11T025=sum(2*(0.025-p[p<=0.025&p>0])*QY11T[p<=0.025&p>0])*pgrid/(0.025^2)
-GQY11T05=sum(2*(0.05-p[p<=0.05&p>0])*QY11T[p<=0.05&p>0])*pgrid/(0.05^2)
-GQY11T10=sum(2*(0.1-p[p<=0.1&p>0])*QY11T[p<=0.1&p>0])*pgrid/(0.1^2)
-GQY11T25=sum(2*(0.25-p[p<=0.25&p>0])*QY11T[p<=0.25&p>0])*pgrid/(0.25^2)
-GQY11T50=sum(2*(0.5-p[p<=0.5&p>0])*QY11T[p<=0.5&p>0])*pgrid/(0.5^2)
+GQY11T05 =sum(2*(0.05-p[p<=0.05&p>0])*QY11T[p<=0.05&p>0])*pgrid/(0.05^2)
+GQY11T10 =sum(2*(0.1-p[p<=0.1&p>0])*QY11T[p<=0.1&p>0])*pgrid/(0.1^2)
+GQY11T25 =sum(2*(0.25-p[p<=0.25&p>0])*QY11T[p<=0.25&p>0])*pgrid/(0.25^2)
+GQY11T50 =sum(2*(0.5-p[p<=0.5&p>0])*QY11T[p<=0.5&p>0])*pgrid/(0.5^2)
 
-GiniY11T01=1-GQY11T01/EQY11T01
+GiniY11T01 =1-GQY11T01/EQY11T01
 GiniY11T025=1-GQY11T025/EQY11T025
-GiniY11T05=1-GQY11T05/EQY11T05
-GiniY11T10=1-GQY11T10/EQY11T10
-GiniY11T25=1-GQY11T25/EQY11T25
-GiniY11T50=1-GQY11T50/EQY11T50
+GiniY11T05 =1-GQY11T05/EQY11T05
+GiniY11T10 =1-GQY11T10/EQY11T10
+GiniY11T25 =1-GQY11T25/EQY11T25
+GiniY11T50 =1-GQY11T50/EQY11T50
 
 
-EQY10TDDID01=sum(QY10TDDID[p<=0.01&p>0])*pgrid/0.01
+EQY10TDDID01 =sum(QY10TDDID[p<=0.01&p>0])*pgrid/0.01
 EQY10TDDID025=sum(QY10TDDID[p<=0.025&p>0])*pgrid/0.025
-EQY10TDDID05=sum(QY10TDDID[p<=0.05&p>0])*pgrid/0.05
-EQY10TDDID10=sum(QY10TDDID[p<=0.1&p>0])*pgrid/0.1
-EQY10TDDID25=sum(QY10TDDID[p<=0.25&p>0])*pgrid/0.25
-EQY10TDDID50=sum(QY10TDDID[p<=0.5&p>0])*pgrid/0.5
+EQY10TDDID05 =sum(QY10TDDID[p<=0.05&p>0])*pgrid/0.05
+EQY10TDDID10 =sum(QY10TDDID[p<=0.1&p>0])*pgrid/0.1
+EQY10TDDID25 =sum(QY10TDDID[p<=0.25&p>0])*pgrid/0.25
+EQY10TDDID50 =sum(QY10TDDID[p<=0.5&p>0])*pgrid/0.5
 
 GQY10TDDID01=sum(2*(0.01-p[p<=0.01&p>0])*QY10TDDID[p<=0.01&p>0])*pgrid/(0.01^2)
 GQY10TDDID025=sum(2*(0.025-p[p<=0.025&p>0])*QY10TDDID[p<=0.025&p>0])*pgrid/(0.025^2)

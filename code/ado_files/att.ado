@@ -7,6 +7,8 @@ program define csbounds
     local treatment = "`treatment'"
     local period    = "`period'"
 
+    
+    /*
     di "Variable y: `y'"
     di "Treatment variable: `treatment'"
     di "Period variable: `period'"
@@ -19,7 +21,7 @@ program define csbounds
     
     di as txt "Summary statistics for period variable `period':"
     summarize `period'
-    
+    */
         * Generate group variable
     gen group = .
     replace group = 1 if `period' == 0 & `treatment' == 1
@@ -42,7 +44,7 @@ program define csbounds
     collapse (firstnm) FY* group, by(`y')
     
     summ `y' if inlist(group, 1, 2, 4)
-    local startR = -1
+    local startR = -1 //  min -1 of inlist(group, 1, 2, 4)
     local endR = 1 + r(max)
     
     summ `y' if inlist(group, 1, 2)
@@ -79,7 +81,7 @@ program define csbounds
     save `supports'
     restore
     
-    merge m:1 `y' using `supports', keepusing(R Ysupp0 Ysupp1) nogen
+    qui merge m:1 `y' using `supports', keepusing(R Ysupp0 Ysupp1) nogen
     sort `y'
     
     
@@ -144,9 +146,8 @@ mata:
         
         for (i = 1; i <= rows(FY10CR); i++) {  
             min_y = qminus(FY10CR[i], FY00CR, y_data, R)
-            
             FY10TUBY[i] = select(FY00TR, (y_data :== min_y))
-        }
+		}
 
         return(FY10TUBY)
     }
@@ -169,15 +170,12 @@ mata:
     FY10TUBCS = J(rows(y_data), 1, .)  // Initialize FY10TUBCS vector
     
     for (i = 1; i <= rows(y_data); i++) {
-        cond = (Ysupp1 :== 1) :& (y_data :<= y_data[i])
-        
+        cond = (Ysupp1 :== 1) :& (y_data :<= y_data[i])        
         if (sum(cond) > 0) {
-            maximum = max(select(FY10TUBY, cond))
-            FY10TUBCS[i] = maximum
-        }
-    }
+            FY10TUBCS[i] = max(select(FY10TUBY, cond))
+		}
+	}
     
     return(FY10TUBCS)
     }
 end
-
