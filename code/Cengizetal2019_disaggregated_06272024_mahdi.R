@@ -1,7 +1,7 @@
 ############################################################################
 # Author:      
 # Start:     2024-08-07
-# Last Edit: 2024-08-20
+# Last Edit: 2024-09-20
 # Des: 
 # this version uses the quantile of -Y and the left-limit definition 
 # in terms of the cdf of -Y 
@@ -40,8 +40,8 @@ if (os == "windows") {
 
 folder <- "CS_Bounds"
 
-input_path  <- paste0(path, folder, "data/")
-output_path <- paste0(path, folder, "output/")
+input_path  <- paste0(path, folder, "/", "data/")
+output_path <- paste0(path, folder, "/", "output/")
 
 ############
 # Functions 
@@ -306,7 +306,7 @@ for (i in 1:length(p)){
 }
 
 ##########################################################
-# Table 2 -- finding expectation of the quantile function
+# ATT calculations Table 2 and Table 3
 ##########################################################
 
 maxR=2*max(R[-c(length(R))]) 
@@ -343,6 +343,8 @@ EY10TCSLB = sum(
   QY10TCSLB[QY10TCSLB<=maxR&QY10TCSLB>=min(Ysupp1[-c(1)])]
   )*pgrid
 
+
+max(QY10TCSLB[QY10TCSLB<=maxR&QY10TCSLB>=min(Ysupp1[-c(1)])])
 # EY10TCSLB -- this should be UB maybe ... atyp somewhere? 
 25.83-EY10TCSLB
 
@@ -359,24 +361,52 @@ EY10TDDID = sum(
 
 25.83-EY10TDDID
 
-####################################
-### Table 2 continued ... gini swtt 
-####################################
+
+###############
+### quantile -- table 3
+###############
+
+EQY11T01 =sum(QY11T[p<=0.01&p>0])*pgrid/0.01
+
+EQY11T025=sum(QY11T[p<=0.025&p>0])*pgrid/0.025
+EQY11T05 =sum(QY11T[p<=0.05&p>0])*pgrid/0.05
+EQY11T10 =sum(QY11T[p<=0.1&p>0])*pgrid/0.1
+EQY11T25 =sum(QY11T[p<=0.25&p>0])*pgrid/0.25
+EQY11T50 =sum(QY11T[p<=0.5&p>0])*pgrid/0.5
+
+
+EQY10TDDID01d =sum(R[R<Inf&R>-Inf&FY10TDDID<=0.010]*fY10TDDID[R<Inf&R>-Inf&FY10TDDID<=0.01])
+EQY10TDDID025d=sum(R[R<Inf&R>-Inf&FY10TDDID<=0.025]*fY10TDDID[R<Inf&R>-Inf&FY10TDDID<=0.025])
+EQY10TDDID05d =sum(R[R<Inf&R>-Inf&FY10TDDID<=0.050]*fY10TDDID[R<Inf&R>-Inf&FY10TDDID<=0.05])
+EQY10TDDID10d =sum(R[R<Inf&R>-Inf&FY10TDDID<=0.100]*fY10TDDID[R<Inf&R>-Inf&FY10TDDID<=0.1])
+EQY10TDDID25d =sum(R[R<Inf&R>-Inf&FY10TDDID<=0.250]*fY10TDDID[R<Inf&R>-Inf&FY10TDDID<=0.25])
+EQY10TDDID50d =sum(R[R<Inf&R>-Inf&FY10TDDID<=0.5]*fY10TDDID[R<Inf&R>-Inf&FY10TDDID<=0.5])
+
+
+EQY10TDDID01d =sum(fY10TDDID[R<Inf&R>-Inf&FY10TDDID<=0.01])
+
+
+###########################################
+### Gini calcualtions Table 2 and Table 3
+##########################################
 
 # SW_lambda  p is tau .. you can change it tau 
 
 # page 16 -- set u = 1 and p is tau 
 
 # MAhdi: here we calculate the terms in integral 
-G11T     =sum(2*(1-p[QY11T<=maxR&QY11T>=min(Ysupp1[-c(1)])])*
-              (QY11T[QY11T<=maxR & QY11T>=min(Ysupp1[-c(1)])])
-                )*pgrid
-G10TDDID =sum(2*(1-p[QY10TDDID<=maxR&QY10TDDID>=min(Ysupp1[-c(1)])])*
-           QY10TDDID[QY10TDDID<=maxR&QY10TDDID>=min(Ysupp1[-c(1)])]
+G11T     =sum(2*(1-p[QY11T<=maxR & QY11T>=min(Ysupp1[-c(1)])])*
+           QY11T[QY11T<=maxR & QY11T>=min(Ysupp1[-c(1)])]
            )*pgrid
+
+G10TDDID =sum(2*(1-p[QY10TDDID<=maxR&QY10TDDID>=min(Ysupp1[-c(1)])])*
+           QY10TDDID[QY10TDDID<=maxR&QY10TDDID>=min(Ysupp1[-c(1 )])]
+           )*pgrid
+
 G10TCSLB =sum(2*(1-p[QY10TCSLB<=maxR&QY10TCSLB>=min(Ysupp1[-c(1)])])*
            QY10TCSLB[QY10TCSLB<=maxR&QY10TCSLB>=min(Ysupp1[-c(1)])]
            )*pgrid
+
 G10TCSUB =sum(2*(1-p[QY10TCSUB<=maxR&QY10TCSUB>=min(Ysupp1[-c(1)])])*
            QY10TCSUB[QY10TCSUB<=maxR&QY10TCSUB>=min(Ysupp1[-c(1)])]
            )*pgrid
@@ -396,24 +426,6 @@ ICTCSLB = MCTCSLB-GTTCSUB
 ICTCSUB = MCTCSUB-GTTCSLB
 ICTDDID = -(GTTDDID - MCTDDID)             # Ineq component
 
-###############
-### Table 3
-###############
-
-EQY11T01 =sum(QY11T[p<=0.01&p>0])*pgrid/0.01
-EQY11T025=sum(QY11T[p<=0.025&p>0])*pgrid/0.025
-EQY11T05 =sum(QY11T[p<=0.05&p>0])*pgrid/0.05
-EQY11T10 =sum(QY11T[p<=0.1&p>0])*pgrid/0.1
-EQY11T25 =sum(QY11T[p<=0.25&p>0])*pgrid/0.25
-EQY11T50 =sum(QY11T[p<=0.5&p>0])*pgrid/0.5
-
-
-EQY10TDDID01d =sum(R[R<Inf&R>-Inf&FY10TDDID<=0.01]*fY10TDDID[R<Inf&R>-Inf&FY10TDDID<=0.01])
-EQY10TDDID025d=sum(R[R<Inf&R>-Inf&FY10TDDID<=0.025]*fY10TDDID[R<Inf&R>-Inf&FY10TDDID<=0.025])
-EQY10TDDID05d =sum(R[R<Inf&R>-Inf&FY10TDDID<=0.05]*fY10TDDID[R<Inf&R>-Inf&FY10TDDID<=0.05])
-EQY10TDDID10d =sum(R[R<Inf&R>-Inf&FY10TDDID<=0.1]*fY10TDDID[R<Inf&R>-Inf&FY10TDDID<=0.1])
-EQY10TDDID25d =sum(R[R<Inf&R>-Inf&FY10TDDID<=0.25]*fY10TDDID[R<Inf&R>-Inf&FY10TDDID<=0.25])
-EQY10TDDID50d =sum(R[R<Inf&R>-Inf&FY10TDDID<=0.5]*fY10TDDID[R<Inf&R>-Inf&FY10TDDID<=0.5])
 
 
 # Mahdi: the same integral as before we just change the u accodingly 

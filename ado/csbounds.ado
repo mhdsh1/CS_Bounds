@@ -43,6 +43,11 @@ program define csbounds
     sort `y'
     collapse (firstnm) FY* group, by(`y')
     
+    
+    // vectorize from here 
+    
+    
+    
     summ `y' if inlist(group, 1, 2, 4)
     local startR = -1 //  min -1 of inlist(group, 1, 2, 4)
     local endR = 1 + r(max)
@@ -111,7 +116,7 @@ program define csbounds
     
     g FY10TUBCS = .
     
-    mata: FY10TUBCS = calculate_FY10TUBCS("`y'")
+    mata: FY10TUBCS = calculate_F10TUBCS("`y'")
     mata: st_store(., "FY10TUBCS", FY10TUBCS)
         
     g FY10TCiC = FY10TUBCS
@@ -160,6 +165,8 @@ in the if (Ysupp1[n] == 1) {}
 
 mata:
 
+// this does the limsup transformation 
+
     real vector calculate_FY10TUBCS(string y) {
    
     R        = st_data(., "R")  
@@ -179,3 +186,5 @@ mata:
     return(FY10TUBCS)
     }
 end
+
+
