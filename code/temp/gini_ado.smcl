@@ -1,0 +1,604 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}/home/mahdi/Dropbox/CS_Bounds/code/gini_ado.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res} 3 Oct 2024, 22:42:58
+{txt}
+{com}. 
+. program gini, rclass
+{txt}  1{com}.     version 18.0
+{txt}  2{com}.     
+.     syntax varlist(min=3 max=3) [if], ///
+>         u(real)
+{txt}  3{com}. 
+. 
+.     local y       :   word 1 of `varlist'
+{txt}  4{com}.     local treatment : word 2 of `varlist'
+{txt}  5{com}.     local period  :   word 3 of `varlist'
+{txt}  6{com}.     
+. 
+.     if ("`u'" == "") local u = 0  // Default value for u if not provided
+{txt}  7{com}.     else local u = `u'
+{txt}  8{com}. 
+.     sort `y'
+{txt}  9{com}.     
+.     global cond00C = "(period == 0 & treatment == 0)"
+{txt} 10{com}.     global cond00T = "(period == 0 & treatment == 1)"
+{txt} 11{com}.     global cond10C = "(period == 1 & treatment == 0)"
+{txt} 12{com}.     global cond11T = "(period == 1 & treatment == 1)"
+{txt} 13{com}. 
+.     qui summ y if  $cond00C
+{txt} 14{com}.     global EY00C = r(mean)
+{txt} 15{com}.     qui summ y if  $cond00T
+{txt} 16{com}.     global EY00T = r(mean)
+{txt} 17{com}.     qui summ y if  $cond10C
+{txt} 18{com}.     global EY10C = r(mean)
+{txt} 19{com}.     qui summ y if  $cond11T
+{txt} 20{com}.     global EY11T = r(mean)
+{txt} 21{com}. 
+.     qui summ y if ($cond00C | $cond00T | $cond10C) 
+{txt} 22{com}.     global Rmax = 2*(1 + r(max))
+{txt} 23{com}.     //global Rmax = 2*858.14
+. 
+.     preserve
+{txt} 24{com}.         
+.     summ y if ($cond00C | $cond00T | $cond10C) 
+{txt} 25{com}.     local startR = -1 - r(min)
+{txt} 26{com}.     local endR   = 1  + r(max)
+{txt} 27{com}. 
+.     local startRm = -1 - r(max)
+{txt} 28{com}.     local endRm   = 1  + r(min)
+{txt} 29{com}.     
+.     summ y if $cond10C
+{txt} 30{com}.     local start1 = 0
+{txt} 31{com}.     local end1   = r(max)
+{txt} 32{com}.     
+.         global Inf = 1e30    
+{txt} 33{com}.     
+.     local Rgrid = 0.01
+{txt} 34{com}.     local R_size  = round((`endR' - `startR')   / `Rgrid') + 1
+{txt} 35{com}.     local Rm_size = round((`endRm' - `startRm') / `Rgrid') + 1
+{txt} 36{com}. 
+.     local total_obs = `R_size' + 2
+{txt} 37{com}.     di `total_obs'
+{txt} 38{com}.         
+.     clear
+{txt} 39{com}.     set obs `total_obs'
+{txt} 40{com}.     
+.     range   seq `startR' `endR' `R_size'
+{txt} 41{com}.     replace seq = round(seq, `Rgrid')
+{txt} 42{com}.     gen     y = seq[_n-1]
+{txt} 43{com}.     replace y = -${c -(}Inf{c )-} in 1
+{txt} 44{com}.     replace y = ${c -(}Inf{c )-} in `total_obs'
+{txt} 45{com}.     sort y
+{txt} 46{com}.     drop seq
+{txt} 47{com}.     
+.     range   seq `startRm' `endRm' `Rm_size'
+{txt} 48{com}.     replace seq = round(seq, `Rgrid')
+{txt} 49{com}.     gen     ym = seq[_n-1]
+{txt} 50{com}.     replace ym = -${c -(}Inf{c )-} in 1
+{txt} 51{com}.     replace ym = ${c -(}Inf{c )-} in `total_obs'
+{txt} 52{com}.     sort ym
+{txt} 53{com}.     drop seq
+{txt} 54{com}.    
+.     gen R  = 1
+{txt} 55{com}.     gen Rm = 1
+{txt} 56{com}.     gen Ysupp1 = ((y >= `start1' & y <= `end1') | inlist(_n, 1, _N))
+{txt} 57{com}.     
+.     tempfile supports
+{txt} 58{com}.     save `supports'
+{txt} 59{com}.     restore
+{txt} 60{com}. 
+.     preserve
+{txt} 61{com}.     sort  y
+{txt} 62{com}.     cumul y if $cond00C, gen(FY00C) equal
+{txt} 63{com}.     cumul y if $cond00T, gen(FY00T) equal
+{txt} 64{com}.     cumul y if $cond10C, gen(FY10C) equal    
+{txt} 65{com}.     cumul y if $cond11T, gen(FY11T) equal
+{txt} 66{com}.         
+.     keep if period    != .
+{txt} 67{com}.     keep if treatment != .
+{txt} 68{com}.     keep if y         != .
+{txt} 69{com}. 
+.     sort y
+{txt} 70{com}.     collapse (firstnm) FY00C FY00T FY11T FY10C, by(y)
+{txt} 71{com}. 
+.     qui merge m:1 y using `supports', keepusing(R Ysupp1) nogen
+{txt} 72{com}. 
+.     replace  R = .    if R == 0
+{txt} 73{com}.     replace  R = y    if R == 1
+{txt} 74{com}. 
+.     replace  Ysupp1 = . if Ysupp1 == 0
+{txt} 75{com}.     replace  Ysupp1 = y if Ysupp1 == 1
+{txt} 76{com}.     
+.     sort y 
+{txt} 77{com}.     replace FY00C = FY00C[_n-1] if FY00C == .
+{txt} 78{com}.     replace FY10C = FY10C[_n-1] if FY10C == .
+{txt} 79{com}.     replace FY00T = FY00T[_n-1] if FY00T == .
+{txt} 80{com}.     replace FY11T = FY11T[_n-1] if FY11T == .
+{txt} 81{com}. 
+.     keep if R != .
+{txt} 82{com}. 
+.     keep y R Ysupp1 FY00C FY00T FY10C FY11T
+{txt} 83{com}.     
+.     tempfile R
+{txt} 84{com}.     save `R'
+{txt} 85{com}.     restore
+{txt} 86{com}. 
+. // making the Rm
+.         
+.     g ym = -y
+{txt} 87{com}. 
+.     sort  ym
+{txt} 88{com}.     cumul ym if $cond00C, gen(FmY00C) equal
+{txt} 89{com}.     cumul ym if $cond00T, gen(FmY00T) equal
+{txt} 90{com}. 
+.     keep if period != .
+{txt} 91{com}.     keep if treatment != .
+{txt} 92{com}.     keep if ym != .
+{txt} 93{com}. 
+.     sort ym
+{txt} 94{com}.     collapse (firstnm) FmY00C FmY00T, by(ym)
+{txt} 95{com}. 
+.     qui merge m:1 ym using `supports', keepusing(Rm) nogen
+{txt} 96{com}. 
+.     sort ym
+{txt} 97{com}. 
+.     replace  Rm = .    if Rm == 0
+{txt} 98{com}.     replace  Rm = ym   if Rm == 1
+{txt} 99{com}. 
+.     sort ym 
+{txt}100{com}.     replace FmY00C = FmY00C[_n-1] if FmY00C == .
+{txt}101{com}.     replace FmY00T = FmY00T[_n-1] if FmY00T == .
+{txt}102{com}. 
+.     keep if Rm != . 
+{txt}103{com}.     g y = -ym
+{txt}104{com}.     keep y ym Rm FmY00C FmY00T 
+{txt}105{com}. 
+.     tempfile Rm
+{txt}106{com}.     save `Rm'
+{txt}107{com}. 
+. // merging all the supports and distributuins 
+. merge 1:1 y using `R', ///
+> keepusing (R Ysupp1 FY00C FY00T FY10C FY11T) nogen
+{txt}108{com}. 
+. order y R Ysupp1 FY00C FY00T FY10C FY11T ym Rm FmY00C FmY00T
+{txt}109{com}. 
+. replace FY00C = 0 if FY00C == .
+{txt}110{com}. replace FY10C = 0 if FY10C == .
+{txt}111{com}. replace FY00T = 0 if FY00T == .
+{txt}112{com}. replace FY11T = 0 if FY11T == .
+{txt}113{com}. 
+. replace FmY00C = 0 if FmY00C == .  
+{txt}114{com}. replace FmY00T = 0 if FmY00T == . 
+{txt}115{com}. 
+. g FY10TDDID = FY00T + FY10C - FY00C
+{txt}116{com}.  
+. sort R
+{txt}117{com}. 
+. mata: square(`u')
+{txt}118{com}. matrix colnames result = "G11T" "G10TCSLB" "G10TCSUB" "G10TDDID"
+{txt}119{com}. matrix list result
+{txt}120{com}. 
+. matrix colnames resultu = "G11T" "GQY11T`u'" "GQCSLB`u'" "GQCSUB`u'" "GQDDID`u'"
+{txt}121{com}. matrix list resultu
+{txt}122{com}. 
+. end
+{txt}
+{com}. 
+. mata:
+{txt}{hline 49} mata (type {cmd:end} to exit) {hline}
+{com}: real matrix square(real scalar u) {c -(}
+> 
+>     Rgrid = 0.01
+>     maxR  = $Rmax
+>     EY11T = $EY11T
+>     EY00C = $EY00C
+>     EY10C = $EY10C
+>     EY00T = $EY00T
+>         
+>     R      = round(st_data(., "R"),      Rgrid)
+>     Rm     = round(st_data(., "Rm"),     Rgrid)
+>     Ysupp1 = round(st_data(., "Ysupp1"), Rgrid)
+> 
+>     FY00CR  = st_data(., "FY00C")
+>     FY10CR  = st_data(., "FY10C")
+>     FY00TR  = st_data(., "FY00T")
+>     FY11TR  = st_data(., "FY11T")
+>     FY10TDDID = st_data(., "FY10TDDID")
+>     
+>     FmY00CR = st_data(., "FmY00C")
+>     FmY00TR = st_data(., "FmY00T")
+> 
+>     FY10TUBY  = J(rows(R), 1, .) 
+>     FY10TUBCS = J(rows(R), 1, .) 
+> 
+>     FY10TLBmY  = J(rows(Rm), 1, .) 
+>     FY10TLBCS = J(rows(Rm), 1, .) 
+>         
+>     for (i = 1; i <= rows(Ysupp1); i++) {c -(}
+>         cond = (Ysupp1[i] != .)
+>         if (sum(cond) > 0) {c -(}
+>             min = round(qminus(FY10CR[i], FY00CR, R), Rgrid)
+>             FY10TUBY[i] = select(FY00TR, (R :== min))
+>             {c )-}
+>         {c )-}
+> 
+>     for (i = 1; i <= rows(R); i++) {c -(}
+>         cond = (Ysupp1 != .) :& (R :<= R[i])        
+>         if (sum(cond) > 0) {c -(}
+>             FY10TUBCS[i] = max(select(FY10TUBY, cond))
+>             {c )-}
+>         {c )-}
+> 
+>     for (i = 1; i <= rows(Ysupp1); i++) {c -(}
+>         cond = (Ysupp1[i] != .)
+>         if (sum(cond) > 0) {c -(}
+>             min = round(qminus(1-FY10CR[i], FmY00CR, Rm), Rgrid)
+>             FY10TLBmY[i] = 1 - select(FmY00TR, (Rm :== min))
+>             {c )-}
+>                         
+>         {c )-}
+>                 
+>     for (i = 1; i <= rows(R); i++) {c -(}
+>         cond = (Ysupp1 != .) :& (R :<= R[i])        
+>         if (sum(cond) > 0) {c -(}
+>             FY10TLBCS[i] = max(select(FY10TLBmY, cond))
+>             {c )-}
+>         {c )-}
+> 
+>         
+>     fY10TDDID = J(rows(R), 1, .)
+> 
+>     for (i=2; i<=rows(R); i++) {c -(}
+>         fY10TDDID[i] = FY10TDDID[i] - FY10TDDID[i-1]
+>         {c )-}
+> 
+>     pgrid  = 0.001
+>     startp = 0
+>     endp   = 1
+>     p_size = (endp - startp) / pgrid + 1
+>     p = startp :+ (0::(p_size - 1)) * pgrid
+>     p = round(p, pgrid)
+>     
+>     QY11T     = J(rows(p), 1, .) 
+>     QY10TCSLB = J(rows(p), 1, .)  
+>     QY10TCSUB = J(rows(p), 1, .)   
+>     QY10TDDID = J(rows(p), 1, .)
+> 
+>     for (i = 1; i <= rows(p); i++) {c -(}  
+>         QY11T[i]     = round(qminus(p[i], FY11TR,    R), Rgrid)
+>         QY10TCSLB[i] = round(qminus(p[i], FY10TUBCS, R), Rgrid)
+>         QY10TCSUB[i] = round(qminus(p[i], FY10TLBCS, R), Rgrid)
+>         QY10TDDID[i] = round(qminus(p[i], FY10TDDID, R), Rgrid)
+>         {c )-}
+> 
+> 
+> // Table 2 Results //
+> 
+>     G11T     = 0
+>     G10TCSLB = 0
+>     G10TCSUB = 0  
+>     G10TDDID = 0
+>         
+>     for (i = 1; i <= rows(p); i++) {c -(}
+>         cond = (QY11T[i] :<= maxR) :& 
+>                (QY11T[i] :>= min(Ysupp1[2..rows(Ysupp1)])) 
+>         if (sum(cond) > 0) {c -(}
+>             G11T = G11T + 2*(1-p[i])*QY11T[i]*pgrid
+>             {c )-}
+>         {c )-}
+> 
+>     for (i = 1; i <= rows(p); i++) {c -(}
+>         cond = (QY10TCSLB[i] :<= maxR) :& 
+>                        (QY10TCSLB[i] :>= min(Ysupp1[2..rows(Ysupp1)])) 
+>         if (sum(cond) > 0) {c -(}
+>             G10TCSLB = G10TCSLB + 2*(1-p[i])*QY10TCSLB[i]*pgrid
+>             {c )-}
+>         {c )-}
+>         
+>         for (i = 1; i <= rows(p); i++) {c -(}
+>         cond = (QY10TCSUB[i] :<= maxR) :& 
+>                        (QY10TCSUB[i] :>= min(Ysupp1[2..rows(Ysupp1)])) 
+>         if (sum(cond) > 0) {c -(}
+>                     G10TCSUB = G10TCSUB + 2*(1-p[i])*QY10TCSUB[i]*pgrid
+>             {c )-}
+>         {c )-}
+>         
+>         for (i = 1; i <= rows(p); i++) {c -(}
+>         cond = (QY10TDDID[i] :<= maxR) :& 
+>                        (QY10TDDID[i] :>= min(Ysupp1[2..rows(Ysupp1)])) 
+>         if (sum(cond) > 0) {c -(}
+>                     G10TDDID = G10TDDID + 2*(1-p[i])*QY10TDDID[i]*pgrid
+>             {c )-}
+>         {c )-}
+> 
+>     // Table 3 Results //
+>         
+>     GQY11Tu     = 0
+>     GQY10TCSLBu = 0   
+>     GQY10TCSUBu = 0
+>     GQY10TDDIDu = 0
+>         
+>         for (i = 1; i <= rows(p); i++) {c -(}
+>         cond = (p[i] :<= u) :& 
+>                        (p[i] :>  0) 
+>         if (sum(cond) > 0) {c -(}
+>                     GQY11Tu     = GQY11Tu     + 2*(u-p[i])*QY11T[i]    *pgrid/(u^2)
+>                     GQY10TCSLBu = GQY10TCSLBu + 2*(u-p[i])*QY10TCSLB[i]*pgrid/(u^2)
+>                     GQY10TCSUBu = GQY10TCSUBu + 2*(u-p[i])*QY10TCSUB[i]*pgrid/(u^2)
+>                     GQY10TDDIDu = GQY10TDDIDu + 2*(u-p[i])*QY10TDDID[i]*pgrid/(u^2)
+>             {c )-}
+>         {c )-}
+>         
+>     G11T     = round(G11T, 0.01)
+>     G10TCSLB = round(G10TCSLB, 0.01)
+>     G10TCSUB = round(G10TCSUB, 0.01) 
+>     G10TDDID = round(G10TDDID, 0.01)
+> 
+>     G11T = round(G11T, 0.01)
+>     GQY11Tu = round(GQY11Tu, 0.01)
+>     GQCSLBu = round(GQY11Tu-GQY10TCSLBu, 0.01)
+>     GQCSUBu = round(GQY11Tu-GQY10TCSUBu, 0.01)
+>     GQDDIDu = round(GQY11Tu-GQY10TDDIDu, 0.01)
+> 
+>     real matrix result
+>     result = (G11T, G10TCSLB, G10TCSUB, G10TDDID)
+>     st_matrix("result", result)
+>     
+>     real matrix resultu
+>     resultu = (G11T, GQY11Tu, GQCSLBu, GQCSUBu, GQDDIDu)
+>     st_matrix("resultu", resultu)
+>   
+>   return(.) 
+> {c )-}
+{txt}note: variable {bf:EY11T} set but not used.
+note: variable {bf:EY00C} set but not used.
+note: variable {bf:EY10C} set but not used.
+note: variable {bf:EY00T} set but not used.
+
+{com}: end
+{txt}{hline}
+
+{com}. 
+. mata:
+{txt}{hline 49} mata (type {cmd:end} to exit) {hline}
+{com}: real scalar qminus(real scalar q, real vector FY, real vector R) {c -(}
+>     cond = (FY :>= q) 
+>     if (sum(cond) > 0) {c -(}
+>         return(min(select(R, cond)))
+>     {c )-}
+>     return(.)
+> {c )-}
+
+: end
+{txt}{hline}
+
+{com}. 
+. use "${c -(}input_path{c )-}/build/CPS_cleaned_merged_yearly_10_to_15.dta", clear
+{txt}
+{com}. 
+. gen y = wage / 100
+{txt}(1,152,682 missing values generated)
+
+{com}. 
+. preserve
+{txt}
+{com}. collapse (mean) state_mw2010 = state_mw ///
+> if year == 2010, by (statenum year month)
+{res}{txt}
+{com}. tempfile mw2010
+{txt}
+{com}. save `mw2010'
+{txt}{p 0 4 2}
+file {bf}
+/tmp/St3029890.000002{rm}
+saved
+as .dta format
+{p_end}
+
+{com}. restore
+{txt}
+{com}. 
+. qui merge m:1 statenum month using  `mw2010', keepusing(state_mw2010) nogen
+{txt}
+{com}. 
+. preserve
+{txt}
+{com}. collapse (mean) state_mw2011 = state_mw ///
+> if year == 2011, by (statenum year month)
+{res}{txt}
+{com}. tempfile mw2011
+{txt}
+{com}. save `mw2011'
+{txt}{p 0 4 2}
+file {bf}
+/tmp/St3029890.000004{rm}
+saved
+as .dta format
+{p_end}
+
+{com}. restore
+{txt}
+{com}. 
+. qui merge m:1 statenum month using  `mw2011', keepusing(state_mw2011) nogen
+{txt}
+{com}. 
+. preserve
+{txt}
+{com}. collapse (mean) state_mw2015 = state_mw ///
+> if year == 2015, by (statenum year month)
+{res}{txt}
+{com}. tempfile mw2015
+{txt}
+{com}. save `mw2015'
+{txt}{p 0 4 2}
+file {bf}
+/tmp/St3029890.000006{rm}
+saved
+as .dta format
+{p_end}
+
+{com}. restore
+{txt}
+{com}. 
+. qui merge m:1 statenum month using  `mw2015', keepusing(state_mw2015) nogen
+{txt}
+{com}. 
+. order statenum year month y state_mw*  
+{txt}
+{com}. sort year month statenum 
+{txt}
+{com}. 
+. gen smw_increase1115 = (state_mw2015 - state_mw2011 > 0.25)
+{txt}
+{com}. 
+. gen smw_increase1015 = (state_mw2015 - state_mw2010 > 0.25)
+{txt}
+{com}. 
+. 
+. local premw     = 8
+{txt}
+{com}. local upremw    = .
+{txt}
+{com}. local preperiod = 2010
+{txt}
+{com}. local Tperiod   = 2015
+{txt}
+{com}. 
+. g period = . 
+{txt}(1,772,507 missing values generated)
+
+{com}. 
+. replace period = 0 if year == 2010 
+{txt}(298,353 real changes made)
+
+{com}. replace period = 1 if year == 2015 
+{txt}(293,886 real changes made)
+
+{com}. 
+. g treatment = .
+{txt}(1,772,507 missing values generated)
+
+{com}. 
+. replace treatment = 0 if smw_increase1015 == 0   & ///
+>                          state_mw2010 >= `premw' & ///
+>                          state_mw2010 <  `upremw'
+{txt}(79,963 real changes made)
+
+{com}. 
+. replace treatment = 1 if smw_increase1015 == 1   & ///
+>                          state_mw2010 >= `premw' & ///
+>                          state_mw2010 <  `upremw'
+{txt}(324,689 real changes made)
+
+{com}. 
+. keep y treatment period 
+{txt}
+{com}. 
+. timer clear 
+{txt}
+{com}. timer on 1
+{txt}
+{com}. 
+. gini y treatment period, u(0.01)
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 11}y {c |}{res}     29,068     22.5117    16.65148          0     857.14
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 11}y {c |}{res}      4,454    22.29617    15.48327          0    307.692
+85917
+{txt}{p}
+Number of observations ({bf:_N}) was 0,
+now 85,917.
+{p_end}
+(2 missing values generated)
+(17,915 real changes made)
+(2 missing values generated)
+(1 real change made)
+(1 real change made)
+(2 missing values generated)
+(17,915 real changes made)
+(2 missing values generated)
+(1 real change made)
+(1 real change made)
+{p 0 4 2}
+file {bf}
+/tmp/St3029890.000008{rm}
+saved
+as .dta format
+{p_end}
+(1,180,268 observations deleted)
+(458,709 observations deleted)
+(86,423 observations deleted)
+{res}{txt}(0 real changes made)
+(85,916 real changes made)
+(55,145 real changes made, 55,145 to missing)
+(30,771 real changes made)
+(87,551 real changes made)
+(87,739 real changes made)
+(85,461 real changes made)
+(85,991 real changes made)
+(2,985 observations deleted)
+{p 0 4 2}
+file {bf}
+/tmp/St3029890.00000a{rm}
+saved
+as .dta format
+{p_end}
+(1,152,682 missing values generated)
+(1,180,268 observations deleted)
+(458,709 observations deleted)
+(86,423 observations deleted)
+{res}{txt}(0 real changes made)
+(85,916 real changes made)
+(24,329 real changes made)
+(85,460 real changes made)
+(2,985 observations deleted)
+{p 0 4 2}
+file {bf}
+/tmp/St3029890.00000b{rm}
+saved
+as .dta format
+{p_end}
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}               0
+{txt}{col 5}Matched{col 30}{res}          85,917{txt}  
+{col 5}{hline 41}
+(101 real changes made)
+(101 real changes made)
+(101 real changes made)
+(101 real changes made)
+(63,315 real changes made)
+(101 real changes made)
+{res}  .
+
+{txt}result[1,4]
+        G11T  G10TCSLB  G10TCSUB  G10TDDID
+r1 {res}    16.88     16.52     16.82     16.63
+{reset}{res}
+{txt}resultu[1,5]
+         G11T  GQY11T.01  GQCSLB.01  GQCSUB.01  GQDDID.01
+r1 {res}     16.88        2.1       1.45       1.39       1.53
+{reset}
+{com}. 
+. timer off 1
+{txt}
+{com}. timer list 
+{res}   1:    314.53 /        1 =     314.5280
+{txt}
+{com}. 
+. log close
+      {txt}name:  {res}<unnamed>
+       {txt}log:  {res}/home/mahdi/Dropbox/CS_Bounds/code/gini_ado.smcl
+  {txt}log type:  {res}smcl
+ {txt}closed on:  {res} 3 Oct 2024, 22:48:19
+{txt}{.-}
+{smcl}
+{txt}{sf}{ul off}

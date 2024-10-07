@@ -1,0 +1,371 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}C:/Users/mahdi/Dropbox/CS_Bounds/code/bounds_ado.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res} 5 Oct 2024, 11:33:56
+{txt}
+{com}. 
+. use "${c -(}input_path{c )-}/build/CPS_cleaned_merged_yearly_10_to_15.dta", clear
+{txt}
+{com}. 
+. gen y = wage / 100
+{txt}(1,152,682 missing values generated)
+
+{com}. 
+. preserve
+{txt}
+{com}. collapse (mean) state_mw2010 = state_mw ///
+> if year == 2010, by (statenum year month)
+{txt}
+{com}. tempfile mw2010
+{txt}
+{com}. save `mw2010'
+{txt}file C:\Users\mahdi\AppData\Local\Temp\ST_00000002.tmp saved
+
+{com}. restore
+{txt}
+{com}. 
+. qui merge m:1 statenum month using  `mw2010', keepusing(state_mw2010) nogen
+{txt}
+{com}. 
+. preserve
+{txt}
+{com}. collapse (mean) state_mw2011 = state_mw ///
+> if year == 2011, by (statenum year month)
+{txt}
+{com}. tempfile mw2011
+{txt}
+{com}. save `mw2011'
+{txt}file C:\Users\mahdi\AppData\Local\Temp\ST_00000004.tmp saved
+
+{com}. restore
+{txt}
+{com}. 
+. qui merge m:1 statenum month using  `mw2011', keepusing(state_mw2011) nogen
+{txt}
+{com}. 
+. preserve
+{txt}
+{com}. collapse (mean) state_mw2015 = state_mw ///
+> if year == 2015, by (statenum year month)
+{txt}
+{com}. tempfile mw2015
+{txt}
+{com}. save `mw2015'
+{txt}file C:\Users\mahdi\AppData\Local\Temp\ST_00000006.tmp saved
+
+{com}. restore
+{txt}
+{com}. 
+. qui merge m:1 statenum month using  `mw2015', keepusing(state_mw2015) nogen
+{txt}
+{com}. 
+. order statenum year month y state_mw*  
+{txt}
+{com}. sort year month statenum 
+{txt}
+{com}. 
+. gen smw_increase1115 = (state_mw2015 - state_mw2011 > 0.25)
+{txt}
+{com}. 
+. gen smw_increase1015 = (state_mw2015 - state_mw2010 > 0.25)
+{txt}
+{com}. 
+. 
+. local premw     = 8
+{txt}
+{com}. local upremw    = .
+{txt}
+{com}. local preperiod = 2010
+{txt}
+{com}. local Tperiod   = 2015
+{txt}
+{com}. 
+. g period = . 
+{txt}(1,772,507 missing values generated)
+
+{com}. 
+. replace period = 0 if year == 2010 
+{txt}(298,353 real changes made)
+
+{com}. replace period = 1 if year == 2015 
+{txt}(293,886 real changes made)
+
+{com}. 
+. g treatment = .
+{txt}(1,772,507 missing values generated)
+
+{com}. 
+. replace treatment = 0 if smw_increase1015 == 0   & ///
+>                          state_mw2010 >= `premw' & ///
+>                          state_mw2010 <  `upremw'
+{txt}(79,963 real changes made)
+
+{com}. 
+. replace treatment = 1 if smw_increase1015 == 1   & ///
+>                          state_mw2010 >= `premw' & ///
+>                          state_mw2010 <  `upremw'
+{txt}(324,689 real changes made)
+
+{com}. 
+. 
+. keep y treatment period 
+{txt}
+{com}. 
+. timer clear 
+{txt}
+{com}. timer on 1
+{txt}
+{com}. 
+. csbounds y treatment period
+
+{txt}    Variable {c |}        Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 11}y {c |}{res}     29,068     22.5117    16.65148          0     857.14
+
+{txt}    Variable {c |}        Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 11}y {c |}{res}      4,454    22.29617    15.48327          0    307.692
+85917
+{txt}{p}
+number of observations (_N)  was 0,
+now 85,917
+{p_end}
+(2 missing values generated)
+(17,915 real changes made)
+(2 missing values generated)
+(1 real change made)
+(1 real change made)
+(2 missing values generated)
+(17,915 real changes made)
+(2 missing values generated)
+(1 real change made)
+(1 real change made)
+file C:\Users\mahdi\AppData\Local\Temp\ST_00000008.tmp saved
+(1,180,268 observations deleted)
+(458,709 observations deleted)
+(86,423 observations deleted)
+(0 real changes made)
+(85,916 real changes made)
+(55,145 real changes made, 55,145 to missing)
+(30,771 real changes made)
+(87,551 real changes made)
+(87,739 real changes made)
+(85,461 real changes made)
+(85,991 real changes made)
+(2,985 observations deleted)
+file C:\Users\mahdi\AppData\Local\Temp\ST_0000000a.tmp saved
+(1,152,682 missing values generated)
+(1,180,268 observations deleted)
+(458,709 observations deleted)
+(86,423 observations deleted)
+(0 real changes made)
+(85,916 real changes made)
+(24,329 real changes made)
+(85,460 real changes made)
+(2,985 observations deleted)
+file C:\Users\mahdi\AppData\Local\Temp\ST_0000000b.tmp saved
+{res}
+{txt}{col 5}Result{col 38}# of obs.
+{col 5}{hline 41}
+{col 5}not matched{col 30}{res}               0
+{txt}{col 5}matched{col 30}{res}          85,917{txt}  
+{col 5}{hline 41}
+(101 real changes made)
+(101 real changes made)
+(101 real changes made)
+(101 real changes made)
+(63,315 real changes made)
+(101 real changes made)
+(85,917 missing values generated)
+{res}{txt}(85,917 missing values generated)
+{res}{txt}
+{com}. 
+. timer off 1
+{txt}
+{com}. timer list 
+{res}   1:    395.51 /        1 =     395.5120
+{txt}
+{com}. 
+{txt}end of do-file
+
+{com}. do "C:\Users\mahdi\AppData\Local\Temp\STD00000000.tmp"
+{txt}
+{com}. save "$output_path/CPS_cleaned_merged_yearly_10_to_15_with_dists.dta", replace
+{txt}(note: file /Users/mahdi/Dropbox/CS_Bounds/output/CPS_cleaned_merged_yearly_10_to_15_with_dists.dta not found)
+file /Users/mahdi/Dropbox/CS_Bounds/output/CPS_cleaned_merged_yearly_10_to_15_with_dists.dta saved
+
+{com}. 
+{txt}end of do-file
+
+{com}. do "C:\Users\mahdi\AppData\Local\Temp\STD00000000.tmp"
+{txt}
+{com}. csatt 0.1
+.1
+{res}  25.83
+  .12
+  .56
+  .53
+  -.1
+  8.41
+  .32
+  .6
+  .4
+  .
+
+{txt}result[1,5]
+        fy1     cslb     csub      did  distdid
+r1 {res}   25.83      .12      .56      .53      -.1
+{reset}{res}
+{txt}resultu[1,4]
+        fy1u     cslbu     csubu  distdidu
+r1 {res}     8.41       .32        .6        .4
+{reset}
+{com}. 
+{txt}end of do-file
+
+{com}. do "C:\Users\mahdi\AppData\Local\Temp\STD00000000.tmp"
+{txt}
+{com}. matrix list result
+{res}
+{txt}result[1,5]
+        fy1     cslb     csub      did  distdid
+r1 {res}   25.83      .12      .56      .53      -.1
+{reset}
+{com}. 
+{txt}end of do-file
+
+{com}. do "C:\Users\mahdi\AppData\Local\Temp\STD00000000.tmp"
+{txt}
+{com}. csatt
+{err}something required
+{txt}{search r(100):r(100);}
+
+end of do-file
+
+{search r(100):r(100);}
+
+{com}. do "C:\Users\mahdi\AppData\Local\Temp\STD00000000.tmp"
+{txt}
+{com}. mata: mata clear
+{txt}
+{com}. 
+{txt}end of do-file
+
+{com}. do "C:\Users\mahdi\AppData\Local\Temp\STD00000000.tmp"
+{txt}
+{com}. csatt
+{err}something required
+{txt}{search r(100):r(100);}
+
+end of do-file
+
+{search r(100):r(100);}
+
+{com}. do "C:\Users\mahdi\AppData\Local\Temp\STD00000000.tmp"
+{txt}
+{com}. 
+. mata: mata clear
+{txt}
+{com}. csatt
+{err}something required
+{txt}{search r(100):r(100);}
+
+end of do-file
+
+{search r(100):r(100);}
+
+{com}. do "C:\Users\mahdi\AppData\Local\Temp\STD00000000.tmp"
+{txt}
+{com}. mata: mata clear
+{txt}
+{com}. csatt2 
+.
+{res}  .
+  .
+  .
+  .
+  .
+
+{txt}result[1,5]
+        fy1     cslb     csub      did  distdid
+r1 {res}   25.83      .12      .56      .53      -.1
+{reset}{res}
+{txt}resultu[1,4]
+        fy1u     cslbu     csubu  distdidu
+r1 {res}        .         .         .         .
+{reset}
+{com}. 
+{txt}end of do-file
+
+{com}. do "C:\Users\mahdi\AppData\Local\Temp\STD00000000.tmp"
+{txt}
+{com}. mata: mata clear
+{txt}
+{com}. csatt3
+{err}command {bf}csatt3{sf} is unrecognized
+{txt}{search r(199):r(199);}
+
+end of do-file
+
+{search r(199):r(199);}
+
+{com}. do "C:\Users\mahdi\AppData\Local\Temp\STD00000000.tmp"
+{txt}
+{com}. mata: mata clear
+{txt}
+{com}. csatt3
+{err}'u' found where '(' expected
+(14 lines skipped)
+{com}(error occurred while loading csatt3.ado)
+{txt}{search r(3000):r(3000);}
+
+end of do-file
+
+{search r(3000):r(3000);}
+
+{com}. do "C:\Users\mahdi\AppData\Local\Temp\STD00000000.tmp"
+{txt}
+{com}. mata: mata clear
+{txt}
+{com}. csatt3
+.
+{res}  .
+  .
+  .
+  .
+  .
+  .
+
+{txt}result[1,5]
+        fy1     cslb     csub      did  distdid
+r1 {res}       .        .        .        .        .
+{reset}
+{com}. 
+. 
+. 
+. 
+{txt}end of do-file
+
+{com}. do "C:\Users\mahdi\AppData\Local\Temp\STD00000000.tmp"
+{txt}
+{com}. mata: mata clear
+{txt}
+{com}. csatt3
+.
+{res}  .
+  .
+  .
+  .
+  .
+  .
+
+{txt}result[1,5]
+        fy1     cslb     csub      did  distdid
+r1 {res}       .        .        .        .        .
+{reset}
+{com}. 
+{txt}end of do-file
+
+{com}. exit, clear

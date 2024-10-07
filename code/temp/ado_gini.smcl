@@ -1,0 +1,266 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}/home/mahdi/Dropbox/CS_Bounds/code/ado_gini.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res} 3 Oct 2024, 21:00:38
+{txt}
+{com}. 
+. program gini, rclass
+{txt}  1{com}.     version 18.0
+{txt}  2{com}.     
+.     syntax varlist(min=3 max=3) [if], ///
+>         u(real)
+{txt}  3{com}. 
+. 
+.     local y       :   word 1 of `varlist'
+{txt}  4{com}.     local treatment : word 2 of `varlist'
+{txt}  5{com}.     local period  :   word 3 of `varlist'
+{txt}  6{com}.     
+. 
+.     if ("`u'" == "") local u = 0  // Default value for u if not provided
+{txt}  7{com}.     else local u = `u'
+{txt}  8{com}. 
+.     sort `y'
+{txt}  9{com}.     
+.     global cond00C = "(period == 0 & treatment == 0)"
+{txt} 10{com}.     global cond00T = "(period == 0 & treatment == 1)"
+{txt} 11{com}.     global cond10C = "(period == 1 & treatment == 0)"
+{txt} 12{com}.     global cond11T = "(period == 1 & treatment == 1)"
+{txt} 13{com}. 
+.     qui summ y if  $cond00C
+{txt} 14{com}.     global EY00C = r(mean)
+{txt} 15{com}.     qui summ y if  $cond00T
+{txt} 16{com}.     global EY00T = r(mean)
+{txt} 17{com}.     qui summ y if  $cond10C
+{txt} 18{com}.     global EY10C = r(mean)
+{txt} 19{com}.     qui summ y if  $cond11T
+{txt} 20{com}.     global EY11T = r(mean)
+{txt} 21{com}. 
+.     qui summ y if ($cond00C | $cond00T | $cond10C) 
+{txt} 22{com}.     global max = 1 + r(max)
+{txt} 23{com}.     //global max = 858.14
+. 
+.     preserve
+{txt} 24{com}.         
+.     summ y if ($cond00C | $cond00T | $cond10C) 
+{txt} 25{com}.     local startR = -1 - r(min)
+{txt} 26{com}.     local endR   = 1  + r(max)
+{txt} 27{com}. 
+.     local startRm = -1 - r(max)
+{txt} 28{com}.     local endRm   = 1  + r(min)
+{txt} 29{com}.     
+.     summ y if $cond10C
+{txt} 30{com}.     local start1 = 0
+{txt} 31{com}.     local end1   = r(max)
+{txt} 32{com}.     
+.     global Inf = 1e30    
+{txt} 33{com}.     
+.     local Rgrid = 0.01
+{txt} 34{com}.     local R_size  = round((`endR' - `startR')   / `Rgrid') + 1
+{txt} 35{com}.     local Rm_size = round((`endRm' - `startRm') / `Rgrid') + 1
+{txt} 36{com}. 
+.     local total_obs = `R_size' + 2
+{txt} 37{com}.     di `total_obs'
+{txt} 38{com}.         
+.     clear
+{txt} 39{com}.     set obs `total_obs'
+{txt} 40{com}.     
+.     range   seq `startR' `endR' `R_size'
+{txt} 41{com}.     replace seq = round(seq, `Rgrid')
+{txt} 42{com}.     gen     y = seq[_n-1]
+{txt} 43{com}.     replace y = -${c -(}Inf{c )-} in 1
+{txt} 44{com}.     replace y = ${c -(}Inf{c )-} in `total_obs'
+{txt} 45{com}.     sort y
+{txt} 46{com}.     drop seq
+{txt} 47{com}.     
+.     range   seq `startRm' `endRm' `Rm_size'
+{txt} 48{com}.     replace seq = round(seq, `Rgrid')
+{txt} 49{com}.     gen     ym = seq[_n-1]
+{txt} 50{com}.     replace ym = -${c -(}Inf{c )-} in 1
+{txt} 51{com}.     replace ym = ${c -(}Inf{c )-} in `total_obs'
+{txt} 52{com}.     sort ym
+{txt} 53{com}.     drop seq
+{txt} 54{com}.    
+.     gen R  = 1
+{txt} 55{com}.     gen Rm = 1
+{txt} 56{com}.     gen Ysupp1 = ((y >= `start1' & y <= `end1') | inlist(_n, 1, _N))
+{txt} 57{com}.     
+.     tempfile supports
+{txt} 58{com}.     save `supports'
+{txt} 59{com}.     restore
+{txt} 60{com}. 
+.     preserve
+{txt} 61{com}.     sort  y
+{txt} 62{com}.     cumul y if $cond00C, gen(FY00C) equal
+{txt} 63{com}.     cumul y if $cond00T, gen(FY00T) equal
+{txt} 64{com}.     cumul y if $cond10C, gen(FY10C) equal    
+{txt} 65{com}.     cumul y if $cond11T, gen(FY11T) equal
+{txt} 66{com}.         
+.     keep if period    != .
+{txt} 67{com}.     keep if treatment != .
+{txt} 68{com}.     keep if y         != .
+{txt} 69{com}. 
+.     sort y
+{txt} 70{com}.     collapse (firstnm) FY00C FY00T FY11T FY10C, by(y)
+{txt} 71{com}. 
+.     qui merge m:1 y using `supports', keepusing(R Ysupp1) nogen
+{txt} 72{com}. 
+.     replace  R = .    if R == 0
+{txt} 73{com}.     replace  R = y    if R == 1
+{txt} 74{com}. 
+.     replace  Ysupp1 = . if Ysupp1 == 0
+{txt} 75{com}.     replace  Ysupp1 = y if Ysupp1 == 1
+{txt} 76{com}.     
+.     sort y 
+{txt} 77{com}.     replace FY00C = FY00C[_n-1] if FY00C == .
+{txt} 78{com}.     replace FY10C = FY10C[_n-1] if FY10C == .
+{txt} 79{com}.     replace FY00T = FY00T[_n-1] if FY00T == .
+{txt} 80{com}.     replace FY11T = FY11T[_n-1] if FY11T == .
+{txt} 81{com}. 
+.     keep if R != .
+{txt} 82{com}. 
+.     keep y R Ysupp1 FY00C FY00T FY10C FY11T
+{txt} 83{com}.     
+.     tempfile R
+{txt} 84{com}.     save `R'
+{txt} 85{com}.     restore
+{txt} 86{com}. 
+. // making the Rm
+.         
+.     g ym = -y
+{txt} 87{com}. 
+.     sort  ym
+{txt} 88{com}.     cumul ym if $cond00C, gen(FmY00C) equal
+{txt} 89{com}.     cumul ym if $cond00T, gen(FmY00T) equal
+{txt} 90{com}. 
+.     keep if period != .
+{txt} 91{com}.     keep if treatment != .
+{txt} 92{com}.     keep if ym != .
+{txt} 93{com}. 
+.     sort ym
+{txt} 94{com}.     collapse (firstnm) FmY00C FmY00T, by(ym)
+{txt} 95{com}. 
+.     qui merge m:1 ym using `supports', keepusing(Rm) nogen
+{txt} 96{com}. 
+.     sort ym
+{txt} 97{com}. 
+.     replace  Rm = .    if Rm == 0
+{txt} 98{com}.     replace  Rm = ym   if Rm == 1
+{txt} 99{com}. 
+.     sort ym 
+{txt}100{com}.     replace FmY00C = FmY00C[_n-1] if FmY00C == .
+{txt}101{com}.     replace FmY00T = FmY00T[_n-1] if FmY00T == .
+{txt}102{com}. 
+.     keep if Rm != . 
+{txt}103{com}.     g y = -ym
+{txt}104{com}.     keep y ym Rm FmY00C FmY00T 
+{txt}105{com}. 
+.     tempfile Rm
+{txt}106{com}.     save `Rm'
+{txt}107{com}. 
+. // merging all the supports and distributuins 
+. merge 1:1 y using `R', ///
+> keepusing (R Ysupp1 FY00C FY00T FY10C FY11T) nogen
+{txt}108{com}. 
+. order y R Ysupp1 FY00C FY00T FY10C FY11T ym Rm FmY00C FmY00T
+{txt}109{com}. 
+. replace FY00C = 0 if FY00C == .
+{txt}110{com}. replace FY10C = 0 if FY10C == .
+{txt}111{com}. replace FY00T = 0 if FY00T == .
+{txt}112{com}. replace FY11T = 0 if FY11T == .
+{txt}113{com}. 
+. replace FmY00C = 0 if FmY00C == .  
+{txt}114{com}. replace FmY00T = 0 if FmY00T == . 
+{txt}115{com}. 
+. g FY10TDDID = FY00T + FY10C - FY00C
+{txt}116{com}.  
+. sort R
+{txt}117{com}. 
+. mata:square(`u')
+{txt}118{com}. 
+. end
+{txt}
+{com}. 
+. mata:
+{txt}{hline 49} mata (type {cmd:end} to exit) {hline}
+{com}: real scalar square(real scalar u) {c -(}
+> 
+>     Rgrid = 0.01
+>     maxR = 2*$max
+>     
+>     
+>     EY11T = $EY11T
+>     EY00C = $EY00C
+>     EY10C = $EY10C
+>     EY00T = $EY00T
+>    
+>     R      = round(st_data(., "R"),      Rgrid)
+{err}invalid lval
+(150 lines skipped)
+{txt}{hline}
+{search r(3000), local:r(3000);}
+
+end of do-file
+
+{search r(3000), local:r(3000);}
+
+{com}. do "/tmp/SD3029890.000000"
+{txt}
+{com}. /********************************************
+> Authors: Mahdi
+> Date:
+> Last modified:
+> Description: 
+> 
+> 
+> ********************************************/
+. 
+. ********************************************
+. * SET UP USERS AND DIRECTORIES
+. ********************************************
+. 
+. clear all
+{res}{txt}
+{com}. 
+. * Extract current username
+. local user = "`c(username)'"
+{txt}
+{com}. 
+. * Current working folder 
+. local folder = "CS_Bounds"
+{txt}
+{com}. 
+. * Directory to Dropbox folder, which depends on machine type:
+. if "`c(os)'" == "Windows" global path = "C:/Users/`user'/Dropbox/`folder'"
+{txt}
+{com}. if "`c(os)'" == "Unix"    global path = "/home/`user'/Dropbox/`folder'"
+{txt}
+{com}. else                      global path = "/Users/`user'/Dropbox/`folder'"
+{txt}
+{com}.  
+. global input_path  = "${c -(}path{c )-}/data"
+{txt}
+{com}. global output_path = "${c -(}path{c )-}/output"
+{txt}
+{com}. global temp_path   = "${c -(}path{c )-}/data/temp"
+{txt}
+{com}. 
+. ********************************************
+. 
+. log using "$path/code/gini_ado", replace    // Open log file
+{err}log file already open
+{txt}{search r(604), local:r(604);}
+
+end of do-file
+
+{search r(604), local:r(604);}
+
+{com}. log close
+      {txt}name:  {res}<unnamed>
+       {txt}log:  {res}/home/mahdi/Dropbox/CS_Bounds/code/ado_gini.smcl
+  {txt}log type:  {res}smcl
+ {txt}closed on:  {res} 3 Oct 2024, 22:16:20
+{txt}{.-}
+{smcl}
+{txt}{sf}{ul off}

@@ -1,0 +1,50 @@
+* Week Aug 19, 2024
+
+** Tasks:
+- 2011 and 2015 for Table 1
+- (1) ado file for CS bounds
+- (2) ado file for Gini and lower-tail Gini SWTT
+- (3) ado file for ATT and lower-tail ATT
+
+if you had time clean the full_code.R
+
+    done 
+
+
+    * Meeting on Aug 29, 2024
+
+    ** Questions to ask
+
+why we have maxR = 2*max(...)
+
+is the table 4 important ?
+
+**Aug 29, 2024
+
+My understanfing of the  Cengizetal2019_disaggregated_06272024
+
+yoy make the cdf of disd did, lb and ub of CS
+
+you obtain quantile of them
+
+you ned the quantiles to calculate the swt 
+
+
+
+
+
+
+* Sep 8, 2024
+
+next thing up: 
+
+- cbounds_test.do: 
+    (1) get the ysupp1
+    (2) how to define the min of that (except the inf)
+
+* Sep 12, 2024
+
+Problems in csbounds.ado and att.ado
+
+
+R[582] = 4.8 

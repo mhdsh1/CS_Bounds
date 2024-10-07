@@ -1,0 +1,496 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}E:/Dropbox/CS_Bounds/code/bounds_ado_2.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res} 4 Oct 2024, 11:22:25
+{txt}
+{com}. 
+. program bounds, rclass
+{txt}  1{com}.     version 14.0
+{txt}  2{com}.         
+.     syntax varlist(min=3 max=3) [if]
+{txt}  3{com}.         
+.     local y       :   word 1 of `varlist'
+{txt}  4{com}.     local treatment : word 2 of `varlist'
+{txt}  5{com}.     local period  :   word 3 of `varlist'
+{txt}  6{com}.     
+.     sort `y'
+{txt}  7{com}.     
+.     global cond00C = "(period == 0 & treatment == 0)"
+{txt}  8{com}.     global cond00T = "(period == 0 & treatment == 1)"
+{txt}  9{com}.     global cond10C = "(period == 1 & treatment == 0)"
+{txt} 10{com}.     global cond11T = "(period == 1 & treatment == 1)"
+{txt} 11{com}. 
+.     qui summ y if  $cond00C
+{txt} 12{com}.     global EY00C = r(mean)
+{txt} 13{com}.     qui summ y if  $cond00T
+{txt} 14{com}.     global EY00T = r(mean)
+{txt} 15{com}.     qui summ y if  $cond10C
+{txt} 16{com}.     global EY10C = r(mean)
+{txt} 17{com}.     qui summ y if  $cond11T
+{txt} 18{com}.     global EY11T = r(mean)
+{txt} 19{com}. 
+.     qui summ y if ($cond00C | $cond00T | $cond10C) 
+{txt} 20{com}.     global maxR = 2*(1 + r(max))
+{txt} 21{com}. 
+.     preserve
+{txt} 22{com}.         
+.         summ y if ($cond00C | $cond00T | $cond10C) 
+{txt} 23{com}.     local startR = -1 - r(min)
+{txt} 24{com}.     local endR   = 1  + r(max)
+{txt} 25{com}. 
+.         local startRm = -1 - r(max)
+{txt} 26{com}.     local endRm   = 1  + r(min)
+{txt} 27{com}.     
+.         summ y if $cond10C
+{txt} 28{com}.     local start1 = 0
+{txt} 29{com}.     local end1   = r(max)
+{txt} 30{com}.     
+.         global Inf = 1e30    
+{txt} 31{com}.     
+.     local Rgrid = 0.01
+{txt} 32{com}.     local R_size  = round((`endR' - `startR')   / `Rgrid') + 1
+{txt} 33{com}.     local Rm_size = round((`endRm' - `startRm') / `Rgrid') + 1
+{txt} 34{com}. 
+.     local total_obs = `R_size' + 2
+{txt} 35{com}.     di `total_obs'
+{txt} 36{com}.         
+.     clear
+{txt} 37{com}.     set obs `total_obs'
+{txt} 38{com}.     
+.     range   seq `startR' `endR' `R_size'
+{txt} 39{com}.     replace seq = round(seq, `Rgrid')
+{txt} 40{com}.     gen     y = seq[_n-1]
+{txt} 41{com}.     replace y = -${c -(}Inf{c )-} in 1
+{txt} 42{com}.     replace y = ${c -(}Inf{c )-} in `total_obs'
+{txt} 43{com}.     sort y
+{txt} 44{com}.     drop seq
+{txt} 45{com}.     
+.     range   seq `startRm' `endRm' `Rm_size'
+{txt} 46{com}.     replace seq = round(seq, `Rgrid')
+{txt} 47{com}.     gen     ym = seq[_n-1]
+{txt} 48{com}.     replace ym = -${c -(}Inf{c )-} in 1
+{txt} 49{com}.     replace ym = ${c -(}Inf{c )-} in `total_obs'
+{txt} 50{com}.     sort ym
+{txt} 51{com}.     drop seq
+{txt} 52{com}.    
+.     gen R  = 1
+{txt} 53{com}.     gen Rm = 1
+{txt} 54{com}.     gen Ysupp1 = ((y >= `start1' & y <= `end1') | inlist(_n, 1, _N))
+{txt} 55{com}.     
+.     tempfile supports
+{txt} 56{com}.     save `supports'
+{txt} 57{com}.     restore
+{txt} 58{com}. 
+.     preserve
+{txt} 59{com}.         sort  y
+{txt} 60{com}.     cumul y if $cond00C, gen(FY00C) equal
+{txt} 61{com}.     cumul y if $cond00T, gen(FY00T) equal
+{txt} 62{com}.     cumul y if $cond10C, gen(FY10C) equal    
+{txt} 63{com}.     cumul y if $cond11T, gen(FY11T) equal
+{txt} 64{com}.         
+.     keep if period    != .
+{txt} 65{com}.     keep if treatment != .
+{txt} 66{com}.     keep if y         != .
+{txt} 67{com}. 
+.     sort y
+{txt} 68{com}.     collapse (firstnm) FY00C FY00T FY11T FY10C, by(y)
+{txt} 69{com}. 
+.     qui merge m:1 y using `supports', keepusing(R Ysupp1) nogen
+{txt} 70{com}. 
+.     replace  R = .    if R == 0
+{txt} 71{com}.     replace  R = y    if R == 1
+{txt} 72{com}. 
+.     replace  Ysupp1 = . if Ysupp1 == 0
+{txt} 73{com}.     replace  Ysupp1 = y if Ysupp1 == 1
+{txt} 74{com}.     
+.         sort y 
+{txt} 75{com}.     replace FY00C = FY00C[_n-1] if FY00C == .
+{txt} 76{com}.     replace FY10C = FY10C[_n-1] if FY10C == .
+{txt} 77{com}.     replace FY00T = FY00T[_n-1] if FY00T == .
+{txt} 78{com}.     replace FY11T = FY11T[_n-1] if FY11T == .
+{txt} 79{com}. 
+.     keep if R != .
+{txt} 80{com}. 
+.     keep y R Ysupp1 FY00C FY00T FY10C FY11T
+{txt} 81{com}.     
+.         tempfile R
+{txt} 82{com}.     save `R'
+{txt} 83{com}.     restore
+{txt} 84{com}. 
+. // making the Rm
+.         
+.         g ym = -y
+{txt} 85{com}. 
+.     sort  ym
+{txt} 86{com}.     cumul ym if $cond00C, gen(FmY00C) equal
+{txt} 87{com}.     cumul ym if $cond00T, gen(FmY00T) equal
+{txt} 88{com}. 
+.     keep if period != .
+{txt} 89{com}.     keep if treatment != .
+{txt} 90{com}.     keep if ym != .
+{txt} 91{com}. 
+.     sort ym
+{txt} 92{com}.     collapse (firstnm) FmY00C FmY00T, by(ym)
+{txt} 93{com}. 
+.     qui merge m:1 ym using `supports', keepusing(Rm) nogen
+{txt} 94{com}. 
+.     sort ym
+{txt} 95{com}. 
+.     replace  Rm = .    if Rm == 0
+{txt} 96{com}.     replace  Rm = ym   if Rm == 1
+{txt} 97{com}. 
+.     sort ym 
+{txt} 98{com}.     replace FmY00C = FmY00C[_n-1] if FmY00C == .
+{txt} 99{com}.     replace FmY00T = FmY00T[_n-1] if FmY00T == .
+{txt}100{com}. 
+.     keep if Rm != . 
+{txt}101{com}.     g y = -ym
+{txt}102{com}.     keep y ym Rm FmY00C FmY00T 
+{txt}103{com}. 
+.     tempfile Rm
+{txt}104{com}.     save `Rm'
+{txt}105{com}. 
+. // merging all the supports and distributuins 
+. merge 1:1 y using `R', ///
+> keepusing (R Ysupp1 FY00C FY00T FY10C FY11T) nogen
+{txt}106{com}. 
+. order y R Ysupp1 FY00C FY00T FY10C FY11T ym Rm FmY00C FmY00T
+{txt}107{com}. 
+. replace FY00C = 0 if FY00C == .
+{txt}108{com}. replace FY10C = 0 if FY10C == .
+{txt}109{com}. replace FY00T = 0 if FY00T == .
+{txt}110{com}. replace FY11T = 0 if FY11T == .
+{txt}111{com}. 
+. replace FmY00C = 0 if FmY00C == .  
+{txt}112{com}. replace FmY00T = 0 if FmY00T == . 
+{txt}113{com}. 
+. g FY10TDDID = FY00T + FY10C - FY00C
+{txt}114{com}. 
+. sort R
+{txt}115{com}. 
+. g FY10TUBCS = .
+{txt}116{com}. mata: FY10TUBCS = ubound("`y'")
+{txt}117{com}. mata: st_store(., "FY10TUBCS", FY10TUBCS)
+{txt}118{com}. 
+. //g FY10TLBCS = .
+. //mata: FY10TLBCS = lbound("`y'")
+. //mata: st_store(., "FY10TLBCS", FY10TLBCS)
+. 
+. end
+{txt}
+{com}. 
+. mata:
+{txt}{hline 49} mata (type {cmd:end} to exit) {hline}
+{com}: real vector ubound(string y) {c -(}
+> 
+>         FY00CR = st_data(., "FY00C")
+>     FY10CR = st_data(., "FY10C")
+>     FY00TR = st_data(., "FY00T")
+>         R      = st_data(., "R")
+>     Ysupp1 = st_data(., "Ysupp1")
+> 
+>     FY10TUBY  = J(rows(R), 1, .)
+>     FY10TUBCS = J(rows(R), 1, .)  // Initialize FY10TUBCS vector
+>     
+>     for (i = 1; i <= rows(Ysupp1); i++) {c -(} 
+>         cond = (Ysupp1[i] != .)
+>         if (sum(cond)>0){c -(}
+>         min = qminus(FY10CR[i], FY00CR, R)
+>         FY10TUBY[i] = select(FY00TR, (R :== min))
+>                 {c )-}
+>         {c )-}
+> 
+>         // limsup transformation
+>     for (i = 1; i <= rows(R); i++) {c -(}
+>     cond = (Ysupp1 != .) :& (R :<= R[i])        
+>     if (sum(cond) > 0) {c -(}
+>         FY10TUBCS[i] = max(select(FY10TUBY, cond))
+>                 {c )-}
+>         {c )-}
+>     
+>     return(FY10TUBCS)
+> 
+>     {c )-}
+{txt}note: argument y unused
+
+{com}: end
+{txt}{hline}
+
+{com}. 
+. mata:
+{txt}{hline 49} mata (type {cmd:end} to exit) {hline}
+{com}: real vector lbound(string y) {c -(}
+> 
+>         FY00CR = st_data(., "FY00C")
+>     FY10CR = st_data(., "FY10C")
+>     FY00TR = st_data(., "FY00T")
+>         R      = st_data(., "R")
+>         Rm     = st_data(., "Rm")
+>     Ysupp1 = st_data(., "Ysupp1")
+>         
+>     FmY00CR = st_data(., "FmY00C")
+>     FmY00TR = st_data(., "FmY00T")
+> 
+>     FY10TLBmY = J(rows(R), 1, .) 
+>     FY10TLBCS = J(rows(R), 1, .) 
+>     
+>     for (i = 1; i <= rows(Ysupp1); i++) {c -(}
+>         cond = (Ysupp1[i] != .)
+>         if (sum(cond) > 0) {c -(}
+>             min = round(qminus(1-FY10CR[i], FmY00CR, Rm), Rgrid)
+>             FY10TLBmY[i] = 1 - select(FmY00TR, (Rm :== min))
+>             {c )-}
+>         {c )-}
+>                 
+>     for (i = 1; i <= rows(R); i++) {c -(}
+>         cond = (Ysupp1 != .) :& (R :<= R[i])        
+>         if (sum(cond) > 0) {c -(}
+>             FY10TLBCS[i] = max(select(FY10TLBmY, cond))
+>             {c )-}
+>         {c )-}
+>                 
+>     return(FY10TLBCS)
+>     {c )-}
+{txt}note: variable Rgrid may be used before set
+note: argument y unused
+note: variable FY00CR set but not used
+note: variable FY00TR set but not used
+
+{com}: end
+{txt}{hline}
+
+{com}. 
+. mata:
+{txt}{hline 49} mata (type {cmd:end} to exit) {hline}
+{com}: real scalar qminus(real scalar q, real vector FY, real vector R) {c -(}
+>     cond = (FY :>= q) 
+>     if (sum(cond) > 0) {c -(}
+>         return(min(select(R, cond)))
+>     {c )-}
+>     return(.)
+> {c )-}
+
+: end
+{txt}{hline}
+
+{com}. 
+. use "${c -(}input_path{c )-}/build/CPS_cleaned_merged_yearly_10_to_15.dta", clear
+{txt}
+{com}. 
+. gen y = wage / 100
+{txt}(1,152,682 missing values generated)
+
+{com}. 
+. preserve
+{txt}
+{com}. collapse (mean) state_mw2010 = state_mw ///
+> if year == 2010, by (statenum year month)
+{txt}
+{com}. tempfile mw2010
+{txt}
+{com}. save `mw2010'
+{txt}file C:\Users\dghanem\AppData\Local\Temp\ST_6384_000002.tmp saved
+
+{com}. restore
+{txt}
+{com}. 
+. qui merge m:1 statenum month using  `mw2010', keepusing(state_mw2010) nogen
+{txt}
+{com}. 
+. preserve
+{txt}
+{com}. collapse (mean) state_mw2011 = state_mw ///
+> if year == 2011, by (statenum year month)
+{txt}
+{com}. tempfile mw2011
+{txt}
+{com}. save `mw2011'
+{txt}file C:\Users\dghanem\AppData\Local\Temp\ST_6384_000004.tmp saved
+
+{com}. restore
+{txt}
+{com}. 
+. qui merge m:1 statenum month using  `mw2011', keepusing(state_mw2011) nogen
+{txt}
+{com}. 
+. preserve
+{txt}
+{com}. collapse (mean) state_mw2015 = state_mw ///
+> if year == 2015, by (statenum year month)
+{txt}
+{com}. tempfile mw2015
+{txt}
+{com}. save `mw2015'
+{txt}file C:\Users\dghanem\AppData\Local\Temp\ST_6384_000006.tmp saved
+
+{com}. restore
+{txt}
+{com}. 
+. qui merge m:1 statenum month using  `mw2015', keepusing(state_mw2015) nogen
+{txt}
+{com}. 
+. order statenum year month y state_mw*  
+{txt}
+{com}. sort year month statenum 
+{txt}
+{com}. 
+. gen smw_increase1115 = (state_mw2015 - state_mw2011 > 0.25)
+{txt}
+{com}. 
+. gen smw_increase1015 = (state_mw2015 - state_mw2010 > 0.25)
+{txt}
+{com}. 
+. 
+. local premw     = 8
+{txt}
+{com}. local upremw    = .
+{txt}
+{com}. local preperiod = 2010
+{txt}
+{com}. local Tperiod   = 2015
+{txt}
+{com}. 
+. g period = . 
+{txt}(1,772,507 missing values generated)
+
+{com}. 
+. replace period = 0 if year == 2010 
+{txt}(298,353 real changes made)
+
+{com}. replace period = 1 if year == 2015 
+{txt}(293,886 real changes made)
+
+{com}. 
+. g treatment = .
+{txt}(1,772,507 missing values generated)
+
+{com}. 
+. replace treatment = 0 if smw_increase1015 == 0   & ///
+>                          state_mw2010 >= `premw' & ///
+>                          state_mw2010 <  `upremw'
+{txt}(79,963 real changes made)
+
+{com}. 
+. replace treatment = 1 if smw_increase1015 == 1   & ///
+>                          state_mw2010 >= `premw' & ///
+>                          state_mw2010 <  `upremw'
+{txt}(324,689 real changes made)
+
+{com}. 
+. 
+. keep y treatment period 
+{txt}
+{com}. 
+. timer clear 
+{txt}
+{com}. timer on 1
+{txt}
+{com}. 
+. bounds y treatment period
+
+{txt}    Variable {c |}        Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 11}y {c |}{res}     29,068     22.5117    16.65148          0     857.14
+
+{txt}    Variable {c |}        Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 11}y {c |}{res}      4,454    22.29617    15.48327          0    307.692
+85917
+{txt}{p}
+number of observations (_N)  was 0,
+now 85,917
+{p_end}
+(2 missing values generated)
+(17,915 real changes made)
+(2 missing values generated)
+(1 real change made)
+(1 real change made)
+(2 missing values generated)
+(17,915 real changes made)
+(2 missing values generated)
+(1 real change made)
+(1 real change made)
+file C:\Users\dghanem\AppData\Local\Temp\ST_6384_000008.tmp saved
+(1,180,268 observations deleted)
+(458,709 observations deleted)
+(86,423 observations deleted)
+(0 real changes made)
+(85,916 real changes made)
+(55,145 real changes made, 55,145 to missing)
+(30,771 real changes made)
+(87,551 real changes made)
+(87,739 real changes made)
+(85,461 real changes made)
+(85,991 real changes made)
+(2,985 observations deleted)
+file C:\Users\dghanem\AppData\Local\Temp\ST_6384_00000a.tmp saved
+(1,152,682 missing values generated)
+(1,180,268 observations deleted)
+(458,709 observations deleted)
+(86,423 observations deleted)
+(0 real changes made)
+(85,916 real changes made)
+(24,329 real changes made)
+(85,460 real changes made)
+(2,985 observations deleted)
+file C:\Users\dghanem\AppData\Local\Temp\ST_6384_00000b.tmp saved
+{res}
+{txt}{col 5}Result{col 38}# of obs.
+{col 5}{hline 41}
+{col 5}not matched{col 30}{res}               0
+{txt}{col 5}matched{col 30}{res}          85,917{txt}  
+{col 5}{hline 41}
+(101 real changes made)
+(101 real changes made)
+(101 real changes made)
+(101 real changes made)
+(63,315 real changes made)
+(101 real changes made)
+(85,917 missing values generated)
+{res}{txt}
+{com}. 
+. timer off 1
+{txt}
+{com}. timer list 
+{res}   1:    183.45 /        1 =     183.4480
+{txt}
+{com}. 
+. 
+. /*
+> * Obs denotes FY11|D=1. 
+> * CF-LB/CF-UB denote the CS LB/UB on FY10|D=1
+> 
+> twoway (line FY10TUBCS y if inrange(y,0,50), lcolor(blue)) || ///
+>        (line FY11TR    y if inrange(y,0,50), lcolor(black) )
+> //graph export "${c -(}output_path{c )-}/FTCSbounds_wages_Cengizetal2019", ///
+> //as(pdf) replace
+>        
+> 
+> twoway (line FY10TUBCS y if (inrange(y,0,15) & inrange(FY10TUBCS,0,0.25)), lcolor(blue)) || ///
+>        (line FY11TR    y if (inrange(y,0,15) & inrange(FY11TR,0,0.25)),    lcolor(black) )
+> //graph export "${c -(}output_path{c )-}/FTCSbounds_zoombottom_wages_Cengizetal2019", ///
+> //as(pdf) replace
+> 
+> twoway (line FY10TUBCS y if inrange(y,0,50), lcolor(blue)) || ///
+>        (line FY11TR    y if inrange(y,0,50), lcolor(black) )
+> //graph export "${c -(}output_path{c )-}/FTCSbounds_wages_Cengizetal2019", ///
+> //as(pdf) replace
+>        
+> 
+> twoway (line FY10TUBCS y if (inrange(y,0,15) & inrange(FY10TUBCS,0,0.25)), lcolor(blue)) || ///
+>        (line FY11TR    y if (inrange(y,0,15) & inrange(FY11TR,0,0.25)),    lcolor(black) )
+> //graph export "${c -(}output_path{c )-}/FTCSbounds_zoombottom_wages_Cengizetal2019", ///
+> //as(pdf) replace
+> */
+. 
+. 
+. log close
+      {txt}name:  {res}<unnamed>
+       {txt}log:  {res}E:/Dropbox/CS_Bounds/code/bounds_ado_2.smcl
+  {txt}log type:  {res}smcl
+ {txt}closed on:  {res} 4 Oct 2024, 11:25:55
+{txt}{.-}
+{smcl}
+{txt}{sf}{ul off}
