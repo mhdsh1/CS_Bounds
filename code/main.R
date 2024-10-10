@@ -1,7 +1,7 @@
 ############################################################################
-# Author:      
+# Author: 
 # Start:     2024-08-07
-# Last Edit: 2024-10-05
+# Last Edit: 2024-10-10
 # Des: 
 # this version uses the quantile of -Y and the left-limit definition 
 # in terms of the cdf of -Y 
@@ -135,7 +135,7 @@ Y10Cn<-na.omit(data2015$wage0[data2015$smw_increase1015==0&
 summary_stats<-cbind(summary_stats_pre,summary_stats_post)
 
 write.csv(summary_stats, 
-          paste0(path, "output/", "summarystats_wages_disaggregated06272024_06272024_",
+          paste0(path, "output/R/", "summarystats_wages_disaggregated06272024_06272024_",
                  preperiod,"-",Tperiod,"_",premw,".csv"))
 
 ###################
@@ -182,37 +182,37 @@ for (i in 1:length(R)){
 # Distributional DiD
 FY10TDDID = FY00TR + FY10CR - FY00CR # Dist DiD assumption Slide 24/29
 
-pdf(paste0(path, "output/",sprintf("DistDiDY10T_wages_Cengizetal2019_disaggregated06272024_06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
+pdf(paste0(path, "output/R/",sprintf("DistDiDY10T_wages_Cengizetal2019_disaggregated06272024_06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
 plot(R,FY10TDDID,xlim=c(0,50),ylim=c(0,1),type="l",col="blue4",xlab="y",ylab="cdf",cex.lab=1.5,cex.axis=1.5,cex.lab=1.5)
 lines(R,FY11TR,xlim=c(0,50),ylim=c(0,1),type="l",col="black",cex.lab=1.5,xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 legend("topleft",c("DistDiD","Obs"),cex=1.25,col=c("blue4","black"),lty=c(1,1))
 dev.off()
 
-pdf(paste0(path, "output/",sprintf("DistDiDY10T_zoombottom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
+pdf(paste0(path, "output/R/",sprintf("DistDiDY10T_zoombottom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
 plot(R,FY10TDDID,xlim=c(0,15),ylim=c(0,0.25),type="l",col="blue4",xlab="y",ylab="cdf",cex.lab=1.5,cex.axis=1.5,cex.lab=1.5)
 lines(R,FY11TR,xlim=c(0,15),ylim=c(0,0.25),type="l",col="black",cex.lab=1.5,xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 legend("topleft",c("DistDiD","Obs"),cex=1.25,col=c("blue4","black"),lty=c(1,1))
 dev.off()
 
-pdf(paste0(path, "output/",sprintf("DistDiDY10T_zoomtop_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
+pdf(paste0(path, "output/R/",sprintf("DistDiDY10T_zoomtop_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
 plot(R,FY10TDDID,xlim=c(30,75),ylim=c(0.75,1),type="l",col="blue4",xlab="y",ylab="cdf",cex.lab=1.5,cex.axis=1.5,cex.lab=1.5)
 lines(R,FY11TR,xlim=c(30,75),ylim=c(0.75,1),type="l",col="black",cex.lab=1.5,xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 legend("topleft",c("DistDiD","Obs"),cex=1.25,col=c("blue4","black"),lty=c(1,1))
 dev.off()
 
-pdf(paste0(path, "output/",sprintf("FY00C_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
+pdf(paste0(path, "output/R/",sprintf("FY00C_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
 plot(R,FY00CR,xlim=c(0,50),ylim=c(0,1),type="l",col="black",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 dev.off()
 
-pdf(paste0(path, "output/",sprintf("FY10C_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
+pdf(paste0(path, "output/R/",sprintf("FY10C_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
 plot(R,FY10CR,xlim=c(0,50),ylim=c(0,1),type="l",col="black",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 dev.off()
 
-pdf(paste0(path, "output/",sprintf("FY00T_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
+pdf(paste0(path, "output/R/",sprintf("FY00T_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
 plot(R,FY00TR,xlim=c(0,50),ylim=c(0,1),type="l",col="black",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 dev.off()
 
-pdf(paste0(path, "output/",sprintf("FY11T_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
+pdf(paste0(path, "output/R/",sprintf("FY11T_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
 plot(R,FY11TR,xlim=c(0,50),ylim=c(0,1),type="l",col="black",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 dev.off()
 
@@ -283,116 +283,116 @@ FY10TCiC=FY10TUBCS
 
 lowesty=min(min(Y10Cn),min(Y11Tn),min(Y00Cn),min(Y00Tn))
 
-pdf(paste0(path, "output/",sprintf("FTCSbounds_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
-plot(R,FY10TLBCS,xlim=c(0,50),ylim=c(0,1),type="l",col="black",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
+pdf(paste0(path, "output/R/",sprintf("FTCSbounds_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
+plot(R,FY10TLBCSm,xlim=c(0,50),ylim=c(0,1),type="l",col="black",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 lines(R,FY10TLBCSm,xlim=c(0,50),ylim=c(0,1),col="red",lty=1)
 lines(R,FY10TUBCS,xlim=c(0,50),ylim=c(0,1),col="blue",lty=1)
 lines(R,FY11TR,xlim=c(0,50),ylim=c(0,1),type="l",col="black",xlab="y",ylab="cdf")
 legend("topleft",c("CS-LB","CS-UB", "Obs"),cex=1.25,col=c("red","blue","black"),
-       lty=c(1,1,1))
+        lty=c(1,1,1))
 dev.off()
 
-pdf(paste0(path, "output/",sprintf("FTCSbounds_noobs_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
-plot(R,FY10TLBCS,xlim=c(0,50),ylim=c(0,1),type="l",col="black",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
+pdf(paste0(path, "output/R/",sprintf("FTCSbounds_noobs_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
+plot(R,FY10TLBCSm,xlim=c(0,50),ylim=c(0,1),type="l",col="black",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 lines(R,FY10TLBCSm,xlim=c(0,50),ylim=c(0,1),col="red",lty=1)
 lines(R,FY10TUBCS,xlim=c(0,50),ylim=c(0,1),col="blue",lty=1)
 legend("topleft",c("CS-LB","CS-UB"),cex=1.25,col=c("red","blue"),
-       lty=c(1,1))
+        lty=c(1,1))
 dev.off()
 
-pdf(paste0(path, "output/",sprintf("FTCSbounds_zoombottom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
-plot(R,FY10TLBCS,xlim=c(0,15),ylim=c(0,0.25),type="l",col="black",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
-lines(R,FY10TUBCS,xlim=c(0,15),ylim=c(0,0.25),col="blue",lty=1)
-lines(R,FY10TLBCSm,xlim=c(0,50),ylim=c(0,1),col="red",lty=1)
-lines(R,FY11TR,xlim=c(0,15),ylim=c(0,0.25),type="l",col="black",xlab="y",ylab="cdf")
-legend("topleft",c("CS-LB","CS-UB", "Obs"),cex=1.25,col=c("red","blue","black"),
-       lty=c(1,1,1))
-dev.off()
+# pdf(paste0(path, "output/R/",sprintf("FTCSbounds_zoombottom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
+# plot(R,FY10TLBCS,xlim=c(0,15),ylim=c(0,0.25),type="l",col="black",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
+# lines(R,FY10TUBCS,xlim=c(0,15),ylim=c(0,0.25),col="blue",lty=1)
+# lines(R,FY10TLBCSm,xlim=c(0,50),ylim=c(0,1),col="red",lty=1)
+# lines(R,FY11TR,xlim=c(0,15),ylim=c(0,0.25),type="l",col="black",xlab="y",ylab="cdf")
+# legend("topleft",c("CS-LB","CS-UB", "Obs"),cex=1.25,col=c("red","blue","black"),
+#        lty=c(1,1,1))
+# dev.off()
 
-pdf(paste0(path, "output/",sprintf("FTCSbounds_noobs_zoombottom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
-plot(R,FY10TLBCS,xlim=c(0,15),ylim=c(0,0.25),type="l",col="black",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
-lines(R,FY10TUBCS,xlim=c(0,15),ylim=c(0,0.25),col="blue",lty=1)
-lines(R,FY10TLBCSm,xlim=c(0,50),ylim=c(0,1),col="red",lty=1)
-legend("topleft",c("CS-LB","CS-UB"),cex=1.25,col=c("red","blue"),
-       lty=c(1,1))
-dev.off()
+# pdf(paste0(path, "output/R/",sprintf("FTCSbounds_noobs_zoombottom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
+# plot(R,FY10TLBCS,xlim=c(0,15),ylim=c(0,0.25),type="l",col="black",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
+# lines(R,FY10TUBCS,xlim=c(0,15),ylim=c(0,0.25),col="blue",lty=1)
+# lines(R,FY10TLBCSm,xlim=c(0,50),ylim=c(0,1),col="red",lty=1)
+# legend("topleft",c("CS-LB","CS-UB"),cex=1.25,col=c("red","blue"),
+#        lty=c(1,1))
+# dev.off()
 
-pdf(paste0(path, "output/",sprintf("FTCSbounds_zoomtop_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
-plot(R,FY10TLBCS,xlim=c(30,75),ylim=c(0.75,1),type="l",col="black",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
-lines(R,FY10TUBCS,xlim=c(30,75),ylim=c(0.75,1),col="blue",lty=1)
-lines(R,FY10TLBCSm,xlim=c(0,50),ylim=c(0,1),col="red",lty=1)
-lines(R,FY11TR,xlim=c(0,10),ylim=c(0,0.1),type="l",col="black",xlab="y",ylab="cdf")
-legend("topleft",c("CS-LB","CS-UB", "Obs"),cex=1.25,col=c("red","blue","black"),
-       lty=c(1,1,1))
-dev.off()
+# pdf(paste0(path, "output/R/",sprintf("FTCSbounds_zoomtop_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
+# plot(R,FY10TLBCS,xlim=c(30,75),ylim=c(0.75,1),type="l",col="black",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
+# lines(R,FY10TUBCS,xlim=c(30,75),ylim=c(0.75,1),col="blue",lty=1)
+# lines(R,FY10TLBCSm,xlim=c(0,50),ylim=c(0,1),col="red",lty=1)
+# lines(R,FY11TR,xlim=c(0,10),ylim=c(0,0.1),type="l",col="black",xlab="y",ylab="cdf")
+# legend("topleft",c("CS-LB","CS-UB", "Obs"),cex=1.25,col=c("red","blue","black"),
+#        lty=c(1,1,1))
+# dev.off()
 
 #CSbounds + DistDiD in one figure
 
-pdf(paste0(path, "output/",sprintf("CSboundsDistDiDY10T_wages_Cengizetal2019_disaggregated06272024_06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
+pdf(paste0(path, "output/R/",sprintf("CSboundsDistDiDY10T_wages_Cengizetal2019_disaggregated06272024_06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
 plot(R,FY10TDDID,xlim=c(0,50),ylim=c(0,1),type="l",col="blue4",xlab="y",ylab="cdf",cex.lab=1.5,cex.axis=1.5,cex.lab=1.5)
 lines(R,FY10TUBCS,xlim=c(0,15),ylim=c(0,0.25),col="blue",lty=1)
 lines(R,FY10TLBCSm,xlim=c(0,50),ylim=c(0,1),col="red",lty=1)
 legend("topleft",c("CS-LB","CS-UB","DistDiD"),cex=1.25,col=c("red","blue","blue4"),lty=c(1,1,1))
 dev.off()
 
-pdf(paste0(path, "output/",sprintf("CSboundsDistDiDY10T_zoombottom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
+pdf(paste0(path, "output/R/",sprintf("CSboundsDistDiDY10T_zoombottom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
 plot(R,FY10TDDID,xlim=c(0,15),ylim=c(0,0.25),type="l",col="blue4",xlab="y",ylab="cdf",cex.lab=1.5,cex.axis=1.5,cex.lab=1.5)
 lines(R,FY10TUBCS,xlim=c(0,15),ylim=c(0,0.25),col="blue",lty=1)
 lines(R,FY10TLBCSm,xlim=c(0,50),ylim=c(0,1),col="red",lty=1)
 legend("topleft",c("CS-LB","CS-UB","DistDiD"),cex=1.25,col=c("red","blue","blue4"),lty=c(1,1,1))
 dev.off()
 
-pdf(paste0(path, "output/",sprintf("CSboundsDistDiDY10T_zoomtop_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
+pdf(paste0(path, "output/R/",sprintf("CSboundsDistDiDY10T_zoomtop_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
 plot(R,FY10TDDID,xlim=c(30,75),ylim=c(0.75,1),type="l",col="blue4",xlab="y",ylab="cdf",cex.lab=1.5,cex.axis=1.5,cex.lab=1.5)
 lines(R,FY10TUBCS,xlim=c(0,15),ylim=c(0,0.25),col="blue",lty=1)
 lines(R,FY10TLBCSm,xlim=c(0,50),ylim=c(0,1),col="red",lty=1)
 legend("topleft",c("CS-LB","CS-UN","DistDiD"),cex=1.25,col=c("red","blue","blue4"),lty=c(1,1,1))
 dev.off()
 
-pdf(paste0(path, "output/",sprintf("FTCiC_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
+pdf(paste0(path, "output/R/",sprintf("FTCiC_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
 plot(R,FY10TCiC,xlim=c(0,50),ylim=c(0,1),type="l",col="green",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
-lines(R,FY10TCiCLB,xlim=c(0,50),ylim=c(0,1),type="l",col="magenta",xlab="y",ylab="cdf")
+#lines(R,FY10TCiCLB,xlim=c(0,50),ylim=c(0,1),type="l",col="magenta",xlab="y",ylab="cdf")
 lines(R,FY10TLBCSm,xlim=c(30,75),ylim=c(0.75,1),col="red",lty=5)
 lines(R,FY11TR,xlim=c(0,50),ylim=c(0,1),type="l",col="black",xlab="y",ylab="cdf")
 legend("topleft",c("CiC-PE", "Obs"),cex=1.25,col=c("green","black"),
        lty=c(1,1))
 dev.off()
 
-pdf(paste0(path, "output/",sprintf("FTCiC_zoombottom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
+pdf(paste0(path, "output/R/",sprintf("FTCiC_zoombottom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
 plot(R,FY10TCiC,xlim=c(0,15),ylim=c(0,0.25),type="l",col="green",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 lines(R,FY11TR,xlim=c(0,15),ylim=c(0,0.25),type="l",col="black",xlab="y",ylab="cdf")
-lines(R,FY10TCiCLB,xlim=c(0,50),ylim=c(0,1),type="l",col="magenta",xlab="y",ylab="cdf")
+#lines(R,FY10TCiCLB,xlim=c(0,50),ylim=c(0,1),type="l",col="magenta",xlab="y",ylab="cdf")
 lines(R,FY10TLBCSm,xlim=c(30,75),ylim=c(0.75,1),col="red",lty=5)
 legend("topleft",c("CiC-PE", "Obs"),cex=1.25,col=c("green","black"),
        lty=c(1,1))
 dev.off()
 
-pdf(paste0(path, "output/",sprintf("FTCiC_zoomtop_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
+pdf(paste0(path, "output/R/",sprintf("FTCiC_zoomtop_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
 plot(R,FY10TCiC,xlim=c(30,75),ylim=c(0.75,1),type="l",col="green",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 lines(R,FY11TR,xlim=c(0,10),ylim=c(0,0.1),type="l",col="black",xlab="y",ylab="cdf")
-lines(R,FY10TCiCLB,xlim=c(0,50),ylim=c(0,1),type="l",col="magenta",xlab="y",ylab="cdf")
+#lines(R,FY10TCiCLB,xlim=c(0,50),ylim=c(0,1),type="l",col="magenta",xlab="y",ylab="cdf")
 lines(R,FY10TLBCSm,xlim=c(30,75),ylim=c(0.75,1),col="red",lty=5)
 legend("topleft",c("CiC-PE", "Obs"),cex=1.25,col=c("green","black"),
        lty=c(1,1))
 dev.off()
 
-pdf(paste0(path, "output/",sprintf("FTCiC_wages_Cengizetal2019_disaggregated_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
+pdf(paste0(path, "output/R/",sprintf("FTCiC_wages_Cengizetal2019_disaggregated_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
 plot(R,FY10TCiC,xlim=c(0,50),ylim=c(0,1),type="l",col="green",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
-lines(R,FY10TCiCLB,xlim=c(0,50),ylim=c(0,1),type="l",col="magenta",xlab="y",ylab="cdf")
+#lines(R,FY10TCiCLB,xlim=c(0,50),ylim=c(0,1),type="l",col="magenta",xlab="y",ylab="cdf")
 lines(R,FY10TLBCSm,xlim=c(30,75),ylim=c(0.75,1),col="red",lty=5)
 lines(R,FY11TR,xlim=c(0,50),ylim=c(0,1),type="l",col="black",xlab="y",ylab="cdf")
 legend("topleft",c("CiC-PE", "Obs"),cex=1.25,col=c("green","black"),
        lty=c(1,1))
 dev.off()
 
-pdf(paste0(path, "output/",sprintf("FTCiC_zoombottom_wages_Cengizetal2019_disaggregated_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
+pdf(paste0(path, "output/R/",sprintf("FTCiC_zoombottom_wages_Cengizetal2019_disaggregated_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
 plot(R,FY10TCiC,xlim=c(0,15),ylim=c(0,0.25),type="l",col="green",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 lines(R,FY11TR,xlim=c(0,15),ylim=c(0,0.25),type="l",col="black",xlab="y",ylab="cdf")
 legend("topleft",c("CiC-PE", "Obs"),cex=1.25,col=c("green","black"),
        lty=c(1,1))
 dev.off()
 
-pdf(paste0(path, "output/",sprintf("FTCiC_zoomtop_wages_Cengizetal2019_disaggregated_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
+pdf(paste0(path, "output/R/",sprintf("FTCiC_zoomtop_wages_Cengizetal2019_disaggregated_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
 plot(R,FY10TCiC,xlim=c(30,75),ylim=c(0.75,1),type="l",col="green",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 lines(R,FY11TR,xlim=c(0,10),ylim=c(0,0.1),type="l",col="black",xlab="y",ylab="cdf")
 legend("topleft",c("CiC-PE", "Obs"),cex=1.25,col=c("green","black"),
@@ -429,33 +429,33 @@ for (i in 1:length(p)){
   QY10TCiC[1,i]  = qminus(p[i],FY10TCiC,R)
 }
 
-pdf(paste0(path, "output/",sprintf("Quantiles_DDID_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
+pdf(paste0(path, "output/R/",sprintf("Quantiles_DDID_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
 plot(p,QY10TDDID,xlim=c(0,1),ylim=c(0,500),type="l",col="blue4",xlab="y",ylab="cdf",cex.lab=1.5,cex.axis=1.5,cex.lab=1.5)
 lines(p,QY11T,xlim=c(0,1),ylim=c(0,500),type="l",col="black",cex.lab=1.5,xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 legend("topleft",c("DistDiD"),cex=1.25,col=c("blue4"),lty=c(1))
 dev.off()
 
-pdf(paste0(path, "output/",sprintf("Quantiles_DDID_zoom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
+pdf(paste0(path, "output/R/",sprintf("Quantiles_DDID_zoom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
 plot(p,QY10TDDID,xlim=c(0,0.25),ylim=c(0,15),type="l",col="blue4",xlab="y",ylab="cdf",cex.lab=1.5,cex.axis=1.5,cex.lab=1.5)
 lines(p,QY11T,xlim=c(0,0.25),ylim=c(0,15),type="l",col="black",cex.lab=1.5,xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 legend("topleft",c("DistDiD"),cex=1.25,col=c("blue4"),lty=c(1,1))
 dev.off()
 
-pdf(paste0(path, "output/",sprintf("Quantiles_CS_zoom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
+pdf(paste0(path, "output/R/",sprintf("Quantiles_CS_zoom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
 plot(p,QY10TCSLB,xlim=c(0,0.2),ylim=c(0,10),type="l",col="red",xlab="y",ylab="cdf",cex.lab=1.5,cex.axis=1.5,cex.lab=1.5)
 lines(p,QY10TCSUB,xlim=c(0,0.2),ylim=c(0,10),type="l",col="blue",xlab="y",ylab="cdf",cex.lab=1.5,cex.axis=1.5,cex.lab=1.5)
 lines(p,QY11T,xlim=c(0,0.2),ylim=c(0,10),type="l",col="black",cex.lab=1.5,xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 legend("topleft",c("CS-LB","CS-UB","Obs"),cex=1.25,col=c("red","blue","black"),lty=c(1,1,1))
 dev.off()
 
-pdf(paste0(path, "output/",sprintf("Quantiles_CiC_zoom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
+pdf(paste0(path, "output/R/",sprintf("Quantiles_CiC_zoom_wages_Cengizetal2019_disaggregated06272024_%s-%s_%s.pdf",preperiod,Tperiod,premw)))
 plot(p,QY10TCiC,xlim=c(0,0.2),ylim=c(0,10),type="l",col="green",xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 lines(p,QY11T,xlim=c(0,0.2),ylim=c(0,10),type="l",col="black",cex.lab=1.5,xlab="y",ylab="cdf",cex.axis=1.5,cex.lab=1.5)
 legend("topleft",c("CiC","Obs"),cex=1.25,col=c("green","black"),lty=c(1,1))
 dev.off()
 
 ##########################################################
-# ATT calculations Table 2 and Table 3
+### ATT calculations Table 2 and Table 3
 ##########################################################
 
 maxR=2*max(R[-c(length(R))]) 
@@ -774,7 +774,7 @@ ICTCSLB50=MCTCSLB50-GQCSUB50
 ICTCiC50 =MCTCiC50-GQCiC50
 
 ##############
-
+###
 ##############
 
 QY11T025=QY11T[p==0.025]
@@ -905,4 +905,4 @@ resultsdeltae2=c(e11T2,DeltaeLB2,DeltaeUB2,"--",DeltaeDDID2,DeltaeCiC2)
 
 results = rbind(resultsdeltab,resultsdeltaa1,resultsdeltae1,resultsdeltaa2,resultsdeltae2,resultsATT,resultsGTT,resultsMCGTT,resultsICGTT,resultsEQTT,resultsGQTT,resultsACF,resultsQTT01,resultsQTT025,resultsQTT05,resultsQTT10,resultsQTT25,resultsQTT50,resultsQTT75,resultsQTT90)
 
-write.csv(results,paste0(path, "output/", "ACF_wages_Cengizetal2019_disaggregated06272024_",preperiod,Tperiod,"_",premw,"_02262024.csv"))
+write.csv(results,paste0(path, "output/R/", "ACF_wages_Cengizetal2019_disaggregated06272024_",preperiod,Tperiod,"_",premw,"_02262024.csv"))
